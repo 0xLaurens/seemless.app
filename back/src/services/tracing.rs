@@ -1,6 +1,3 @@
-use axum::routing::IntoMakeService;
-use tower::layer::util::{Identity, Stack};
-use tower::{Service, ServiceBuilder};
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
 use tower_http::trace;
 use tower_http::trace::TraceLayer;
