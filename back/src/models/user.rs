@@ -1,5 +1,6 @@
 pub type Username = String;
 
+#[derive(Debug, PartialEq)]
 pub struct User {
  username: Username,
  user_agent: Option<String>,

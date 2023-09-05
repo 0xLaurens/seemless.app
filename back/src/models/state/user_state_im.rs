@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 use crate::models::user::{User, Username};
 use crate::models::user_manager::UserManager;
 
-struct UserStateInMemory {
+#[derive(Debug)]
+pub struct UserStateInMemory {
     users: Arc<Mutex<HashMap<Username, User>>>
 }
 
@@ -16,34 +18,26 @@ impl UserStateInMemory {
 }
 
 impl UserManager for UserStateInMemory {
-    fn add_user(&self, user: User) -> Result<User, ()> {
-        self.users.lock()?
-            .insert(user.get_username(), user.clone())
+    fn add_user(&self, user: User) -> Result<Option<User>, Box<dyn Error>> {
+        todo!()
     }
 
-    fn remove_user(&self, username: Username) -> Option<User> {
+    fn remove_user(&self, username: Username) -> Result<Option<User>, Box<dyn Error>> {
         todo!()
-        // self.users
-        //     .lock()?
-        //     .remove(&username)
     }
 
-    fn update_user(&self, user: User, username: Username) -> Option<User> {
+    fn update_user(&self, user: User, username: Username) -> Result<Option<User>, Box<dyn Error>> {
         todo!()
-       // let _ = self.users
-       //      .lock()?
-       //      .remove(&username);
-       //
-       //  self.users
-       //      .lock()?
-       //      .insert(username, user)
     }
 
-    fn get_users(&self) -> Vec<User> {
-        todo!()
-        // self.users
-        //     .clone()
-        //     .values()
-        //     .collect()
+    fn get_users(&self) -> Result<Vec<User>, Box<dyn Error>> {
+        let users = self.users
+            .lock()
+            .unwrap()
+            .values()
+            .map(|user| User::new(user.get_username(), user.get_user_agent()))
+            .collect::<Vec<User>>();
+
+        Ok(users)
     }
 }
