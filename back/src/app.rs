@@ -1,8 +1,8 @@
+#![allow(dead_code)]
 use std::net::SocketAddr;
 use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
 use axum::Router;
 use axum::routing::get;
-
 use crate::{services, ws};
 
 pub fn create_app() -> IntoMakeServiceWithConnectInfo<Router, SocketAddr>
