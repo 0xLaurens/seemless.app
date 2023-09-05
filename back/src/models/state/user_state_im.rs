@@ -19,7 +19,11 @@ impl UserStateInMemory {
 
 impl UserManager for UserStateInMemory {
     fn add_user(&self, user: User) -> Result<Option<User>, Box<dyn Error>> {
-        todo!()
+        let user = self.users
+            .lock()
+            .unwrap()
+            .insert(user.get_username(), user);
+        Ok(user)
     }
 
     fn remove_user(&self, username: Username) -> Result<Option<User>, Box<dyn Error>> {
@@ -37,7 +41,6 @@ impl UserManager for UserStateInMemory {
             .values()
             .map(|user| User::new(user.get_username(), user.get_user_agent()))
             .collect::<Vec<User>>();
-
         Ok(users)
     }
 }

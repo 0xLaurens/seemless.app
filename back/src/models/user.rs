@@ -1,6 +1,6 @@
 pub type Username = String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct User {
  username: Username,
  user_agent: Option<String>,
