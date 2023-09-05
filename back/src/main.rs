@@ -1,5 +1,8 @@
 use tracing::info;
 
+#[cfg(test)]
+mod tests;
+
 mod app;
 mod ws;
 mod services;

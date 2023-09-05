@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tracing::Instrument;
 use crate::models::user::{User, Username};
 use crate::models::user_manager::UserManager;
 
@@ -17,31 +16,34 @@ impl UserStateInMemory {
 }
 
 impl UserManager for UserStateInMemory {
-    fn add_user(&self, user: User) -> Option<User> {
-        self.users.lock()
+    fn add_user(&self, user: User) -> Result<User, ()> {
+        self.users.lock()?
             .insert(user.get_username(), user.clone())
     }
 
-    fn remove_user(&self, username: Username) -> User {
-        self.users
-            .lock()
-            .remove(username)?
+    fn remove_user(&self, username: Username) -> Option<User> {
+        todo!()
+        // self.users
+        //     .lock()?
+        //     .remove(&username)
     }
 
     fn update_user(&self, user: User, username: Username) -> Option<User> {
-       let _ = self.users
-            .lock()?
-            .remove(&username);
-
-        self.users
-            .lock()?
-            .insert(username, user)
+        todo!()
+       // let _ = self.users
+       //      .lock()?
+       //      .remove(&username);
+       //
+       //  self.users
+       //      .lock()?
+       //      .insert(username, user)
     }
 
     fn get_users(&self) -> Vec<User> {
-        self.users
-            .clone()
-            .values()
-            .collect()
+        todo!()
+        // self.users
+        //     .clone()
+        //     .values()
+        //     .collect()
     }
 }

@@ -1,4 +1,5 @@
 use tokio::sync::broadcast;
+use crate::models::user_manager::UserManager;
 
 pub struct AppState<T>
 where
