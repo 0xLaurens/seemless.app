@@ -26,8 +26,12 @@ impl UserManager for UserStateInMemory {
         Ok(user)
     }
 
-    fn remove_user(&self, username: Username) -> Result<Option<User>, Box<dyn Error>> {
-        todo!()
+    fn remove_user(&self, username: &Username) -> Result<Option<User>, Box<dyn Error>> {
+        let user = self.users
+            .lock()
+            .unwrap()
+            .remove(username);
+        Ok(user)
     }
 
     fn update_user(&self, user: User, username: Username) -> Result<Option<User>, Box<dyn Error>> {

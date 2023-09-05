@@ -1,5 +1,5 @@
 use crate::models::state::user_state_im::UserStateInMemory;
-use crate::models::user::User;
+use crate::models::user::{User, Username};
 use crate::models::user_manager::UserManager;
 
 #[test]
@@ -33,4 +33,39 @@ fn validate_get_three_users() {
     assert!(user_state.get_users().unwrap().contains(&users[0]));
     assert!(user_state.get_users().unwrap().contains(&users[1]));
     assert!(user_state.get_users().unwrap().contains(&users[2]));
+}
+
+#[test]
+fn remove_non_existing_user() {
+    let user_state = UserStateInMemory::new();
+    let users = vec![
+        User::new(String::from("JohnyTest"), None),
+        User::new(String::from("Gary"), None),
+        User::new(String::from("Fritz"), None)
+    ];
+
+    for user in users.clone() {
+        let _ = user_state.add_user(user);
+    }
+
+    assert_eq!(user_state.get_users().unwrap().len(), 3);
+    let _ = user_state.remove_user(&Username::from("Johny"));
+    assert_eq!(user_state.get_users().unwrap().len(), 3);
+}
+
+#[test]
+fn remove_one_user() {
+    let user_state = UserStateInMemory::new();
+    let users = vec![
+        User::new(String::from("JohnyTest"), None),
+        User::new(String::from("Gary"), None),
+        User::new(String::from("Fritz"), None)
+    ];
+
+    for user in users.clone() {
+        let _ = user_state.add_user(user);
+    }
+    assert_eq!(user_state.get_users().unwrap().len(), 3);
+    let _ = user_state.remove_user(&users[0].get_username());
+    assert_eq!(user_state.get_users().unwrap().len(), 2);
 }
