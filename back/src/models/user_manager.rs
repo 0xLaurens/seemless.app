@@ -9,7 +9,7 @@ use crate::models::user::{User, Username};
 */
 pub trait UserManager {
     fn add_user(&self, user: User) -> Result<Option<User>, UserStateError>;
-    fn remove_user(&self, username: &Username) -> Result<Option<User>, Box<dyn Error>>;
+    fn remove_user(&self, username: &Username) -> Result<Option<User>, UserStateError>;
     fn update_user(&self, user: User, username: Username) -> Result<Option<User>, UserStateError>;
     fn get_users(&self) -> Result<Vec<User>, Box<dyn Error>>;
 }

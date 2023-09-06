@@ -85,6 +85,22 @@ fn remove_one_user() {
 }
 
 #[test]
+fn remove_one_user_that_does_not_exist() {
+    let user_state = UserStateInMemory::new();
+    let users = vec![
+        User::new(String::from("JohnyTest"), None),
+        User::new(String::from("Gary"), None),
+        User::new(String::from("Fritz"), None)
+    ];
+
+    for user in users.clone() {
+        let _ = user_state.add_user(user);
+    }
+    assert_eq!(user_state.get_users().unwrap().len(), 3);
+    assert_eq!(user_state.remove_user(&String::from("John")), Err(UserStateError::UserNotFound));
+}
+
+#[test]
 fn update_user_list_contains_new_username() -> Result<(), Box<dyn Error>> {
     let user_state = UserStateInMemory::new();
     let users = vec![
