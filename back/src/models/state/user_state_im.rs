@@ -35,7 +35,8 @@ impl UserManager for UserStateInMemory {
     }
 
     fn update_user(&self, user: User, username: Username) -> Result<Option<User>, Box<dyn Error>> {
-        todo!()
+        let _ = self.remove_user(&username);
+        self.add_user(user)
     }
 
     fn get_users(&self) -> Result<Vec<User>, Box<dyn Error>> {
