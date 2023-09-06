@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
+use crate::models::state::error::UserStateError;
+use crate::models::state::error::UserStateError::UsernameNotUnique;
 use crate::models::user::{User, Username};
 use crate::models::user_manager::UserManager;
 
@@ -18,11 +20,14 @@ impl UserStateInMemory {
 }
 
 impl UserManager for UserStateInMemory {
-    fn add_user(&self, user: User) -> Result<Option<User>, Box<dyn Error>> {
-        let user = self.users
-            .lock()
-            .unwrap()
-            .insert(user.get_username(), user);
+    fn add_user(&self, user: User) -> Result<Option<User>, UserStateError> {
+        let mut state = self.users.lock()?;
+
+        if state.contains_key(&user.get_username()) {
+            return Err(UsernameNotUnique);
+        }
+
+        let user = state.insert(user.get_username(), user);
         Ok(user)
     }
 
@@ -34,7 +39,7 @@ impl UserManager for UserStateInMemory {
         Ok(user)
     }
 
-    fn update_user(&self, user: User, username: Username) -> Result<Option<User>, Box<dyn Error>> {
+    fn update_user(&self, user: User, username: Username) -> Result<Option<User>, UserStateError> {
         let _ = self.remove_user(&username);
         self.add_user(user)
     }
