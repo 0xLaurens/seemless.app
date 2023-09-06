@@ -4,10 +4,11 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::sync::PoisonError;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum UserStateError {
     UsernameNotUnique,
-    UserNotFound
+    UserNotFound,
+    PoisonError,
 }
 
 impl Display for UserStateError {
@@ -17,6 +18,7 @@ impl Display for UserStateError {
                 write!(f, "The username is not unique, please select another username"),
             UserStateError::UserNotFound =>
                 write!(f, "Could not find the user matching the specified username"),
+            _ => write!(f, "Unexpected error"),
         }
     }
 }
@@ -25,13 +27,14 @@ impl Error for UserStateError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match *self {
             UserStateError::UsernameNotUnique => None,
-            UserStateError::UserNotFound => None
+            UserStateError::UserNotFound => None,
+            _ => None
         }
     }
 }
 
 impl<T> From<PoisonError<T>> for UserStateError {
-    fn from(err: PoisonError<T>) -> Self {
-        Self::from(err)
+    fn from(_err: PoisonError<T>) -> Self {
+        Self::PoisonError
     }
 }

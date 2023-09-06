@@ -1,4 +1,5 @@
 use std::error::Error;
+use crate::models::state::error::UserStateError;
 use crate::models::state::user_state_im::UserStateInMemory;
 use crate::models::user::{User, Username};
 use crate::models::user_manager::UserManager;
@@ -10,15 +11,17 @@ fn validate_new_user_state_is_empty() {
 }
 
 #[test]
-fn validate_get_one_user() {
+fn adding_one_user_getting_one_user() {
     let user_state = UserStateInMemory::new();
+    assert_eq!(Vec::<User>::new(), user_state.get_users().unwrap());
+
     let user = User::new(String::from("JohnyTest"), None);
     let _ = user_state.add_user(user.clone());
     assert_eq!(vec![user], user_state.get_users().unwrap());
 }
 
 #[test]
-fn validate_get_three_users() {
+fn adding_three_users_getting_three_users() {
     let user_state = UserStateInMemory::new();
     let users = vec![
         User::new(String::from("JohnyTest"), None),
@@ -34,6 +37,16 @@ fn validate_get_three_users() {
     assert!(user_state.get_users().unwrap().contains(&users[0]));
     assert!(user_state.get_users().unwrap().contains(&users[1]));
     assert!(user_state.get_users().unwrap().contains(&users[2]));
+}
+
+#[test]
+fn adding_user_not_unique_error() {
+    let user_state = UserStateInMemory::new();
+    let user = User::new(String::from("JohnyTest"), None);
+
+    let _ = user_state.add_user(user.clone());
+    dbg!(&user_state);
+    assert_eq!(user_state.add_user(user), Err(UserStateError::UsernameNotUnique))
 }
 
 #[test]

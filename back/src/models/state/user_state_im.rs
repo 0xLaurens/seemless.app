@@ -22,13 +22,12 @@ impl UserStateInMemory {
 impl UserManager for UserStateInMemory {
     fn add_user(&self, user: User) -> Result<Option<User>, UserStateError> {
         let mut state = self.users.lock()?;
-
         if state.contains_key(&user.get_username()) {
             return Err(UsernameNotUnique);
         }
 
         let user = state.insert(user.get_username(), user);
-        Ok(user)
+        return Ok(user);
     }
 
     fn remove_user(&self, username: &Username) -> Result<Option<User>, Box<dyn Error>> {
