@@ -1,0 +1,26 @@
+stages:
+  - test
+
+backend-test:
+  stage: test
+  image: rust:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - cd back
+    - cargo build --verbose
+    - cargo test --verbose
+
+frontend-test:
+  stage: test
+  image: node:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - cd frontend
+    - npm install --progress=false
+    - npm run test:unit
