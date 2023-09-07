@@ -6,8 +6,8 @@ backend-test:
   image: rust:latest
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
       allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - cd back
     - cargo build --verbose
@@ -18,8 +18,8 @@ frontend-test:
   image: node:latest
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
       allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - cd frontend
     - npm install --progress=false
