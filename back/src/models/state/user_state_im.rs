@@ -5,7 +5,7 @@ use crate::models::state::error::UserStateError;
 use crate::models::user::{User, Username};
 use crate::models::state::user_manager::UserManager;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserStateInMemory {
     users: Arc<Mutex<HashMap<Username, User>>>
 }
