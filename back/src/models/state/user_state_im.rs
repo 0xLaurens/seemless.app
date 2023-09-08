@@ -26,7 +26,7 @@ impl UserManager for UserStateInMemory {
         }
 
         let user = state.insert(user.get_username(), user);
-        return Ok(user);
+        Ok(user)
     }
 
     fn remove_user(&self, username: &Username) -> Result<Option<User>, UserStateError> {
@@ -35,7 +35,7 @@ impl UserManager for UserStateInMemory {
             return Err(UserStateError::UserNotFound);
         }
         let user = state.remove(username);
-        return Ok(user);
+        Ok(user)
     }
 
     fn update_user(&self, user: User, username: Username) -> Result<Option<User>, UserStateError> {
