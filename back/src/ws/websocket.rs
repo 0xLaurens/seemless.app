@@ -3,7 +3,7 @@ use axum::extract::ws::WebSocket;
 use axum::response::Response;
 use axum::Router;
 use axum::routing::get;
-use futures::{SinkExt, StreamExt};
+use futures::{StreamExt};
 
 pub fn create_routes() -> Router {
     Router::new()
@@ -13,15 +13,28 @@ pub fn create_routes() -> Router {
 async fn discover_ws_incoming(
     ws: WebSocketUpgrade,
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_discover_socket(socket))
+    ws.on_upgrade(handle_discover_socket)
 }
 
 async fn handle_discover_socket(
     socket: WebSocket
 ) {
-    let (mut sender, mut _receiver) = socket.split();
-    if sender.send("Welcome".clone().into()).await.is_ok() {
-        println!("Sent: Welcome message")
-    }
+    let (mut _sender, _receiver) = socket.split();
+}
 
+/*
+* Task that keeps track of the websocket connection,
+* broadcasts requests sent the channel
+* and updates user state when the user disconnects
+*/
+async fn handle_connection_task()  {
+    todo!()
+}
+
+/*
+* Task that handles incoming messages
+* and calls other functions based on the message type
+*/
+async fn handle_recv_task() {
+   todo!()
 }
