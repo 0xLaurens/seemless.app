@@ -1,13 +1,17 @@
+use std::sync::Arc;
 use axum::extract::WebSocketUpgrade;
 use axum::extract::ws::WebSocket;
 use axum::response::Response;
 use axum::Router;
 use axum::routing::get;
 use futures::{StreamExt};
+use crate::models::state::app_state::AppState;
+use crate::models::state::user_state_im::UserStateInMemory;
 
-pub fn create_routes() -> Router {
+pub fn create_routes<S>(state: Arc<AppState<UserStateInMemory>>) -> Router<S> {
     Router::new()
         .route("/ws/discover", get(discover_ws_incoming))
+        .with_state(state)
 }
 
 async fn discover_ws_incoming(
