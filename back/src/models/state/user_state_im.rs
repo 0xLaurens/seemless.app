@@ -3,7 +3,7 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 use crate::models::state::error::UserStateError;
 use crate::models::user::{User, Username};
-use crate::models::user_manager::UserManager;
+use crate::models::state::user_manager::UserManager;
 
 #[derive(Debug)]
 pub struct UserStateInMemory {
