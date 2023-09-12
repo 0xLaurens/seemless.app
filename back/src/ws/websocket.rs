@@ -2,12 +2,13 @@ use std::sync::Arc;
 use axum::extract::{State, WebSocketUpgrade};
 use axum::extract::ws::{Message, WebSocket};
 use axum::response::Response;
-use axum::{Router};
+use axum::Router;
 use axum::routing::get;
 use futures::{SinkExt, StreamExt};
 use futures::stream::{SplitSink, SplitStream};
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
+use crate::models::error::handler::HandlerError;
 use crate::models::signal::SignalType;
 use crate::models::state::app_state::AppState;
 use crate::models::state::error::UserStateError;
@@ -28,29 +29,20 @@ async fn discover_ws_incoming(
     ws.on_upgrade(move |socket| handle_discover_socket(socket, state))
 }
 
-async fn handle_discover_socket (
+async fn handle_discover_socket(
     socket: WebSocket,
     state: Arc<AppState<UserStateInMemory>>,
 ) {
-    let (sender, mut receiver) = socket.split();
+    let (mut sender, mut receiver) = socket.split();
 
-    //TODO: create user based on user_req
-    let user= match receiver.next().await {
-        Some(Ok(Message::Text(user))) => {
-            match serde_json::from_str::<SignalType>(&user) {
-                Ok(signal) => {
-                    match signal {
-                        SignalType::Join { username } => {
-                            state.user_state.add_user(User::new(username, None))
-                        }
-                        _ => Ok(None)
-                    }
-                },
-                Err(_) => { Err(UserStateError::DeserializationError) }
-            }
-        }
-        _ => Ok(None)
+    let user = match receiver.next().await {
+        Some(Ok(Message::Text(message))) => {
+            setup_user(message, &state).await
+        },
+        _ => { Ok(None) },
     };
+
+    dbg!(&user);
 
     let tx = state.get_transmitter();
     let rx = tx.subscribe();
@@ -90,4 +82,61 @@ async fn handle_recv_task(
             }
         }
     })
+}
+
+/*
+* Setup the user when they connect to the websocket for the first time;
+*/
+async fn setup_user(message: String, state: &AppState<UserStateInMemory>) -> Result<Option<User>, UserStateError> {
+    match serde_json::from_str::<SignalType>(&message) {
+        Ok(signal) => {
+            match signal {
+                SignalType::Join { username } => {
+                    state.user_state.add_user(User::new(username, None))
+                }
+                _ => Ok(None)
+            }
+        }
+        Err(_) => { Err(UserStateError::DeserializationError) }
+    }
+}
+
+/*
+* Match request type to the corresponding action
+*/
+async fn message_handler(message: String, state: &AppState<UserStateInMemory>) -> Result<(), HandlerError> {
+    if let Ok(signal) = serde_json::from_str::<SignalType>(&message) {
+        match signal {
+            SignalType::Offer(_) => {
+                Ok(())
+            }
+            SignalType::Answer(_) => {
+                Ok(())
+            }
+            SignalType::NewIceCandidate => {
+                Ok(())
+            }
+            SignalType::UserIdentity => {
+                Ok(())
+            }
+            SignalType::PeerJoined => {
+                Ok(())
+            }
+            SignalType::PeerLeft => {
+                Ok(())
+            }
+            SignalType::Peers => {
+                Ok(())
+            }
+            SignalType::Join { username } => {
+                match state.user_state.add_user(User::new(username, None)) {
+                    Ok(_) => {}
+                    Err(_) => { return Err(HandlerError::UnexpectedError); }
+                };
+                Ok(())
+            }
+        }
+    } else {
+        Err(HandlerError::IncorrectMessageFormat)
+    }
 }
