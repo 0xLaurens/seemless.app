@@ -16,7 +16,8 @@
   "dependencies": {
     "pinia": "^2.1.6",
     "vue": "^3.3.4",
-    "vue-router": "^4.2.4"
+    "vue-router": "^4.2.4",
+    "vuesax": "^4.0.1-alpha.25"
   },
   "devDependencies": {
     "@playwright/test": "^1.37.0",
