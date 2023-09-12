@@ -34,15 +34,24 @@ async fn handle_discover_socket(
     state: Arc<AppState<UserStateInMemory>>,
 ) {
     let (mut sender, mut receiver) = socket.split();
+    let mut user: Option<User> = None;
 
-    let user = match receiver.next().await {
-        Some(Ok(Message::Text(message))) => {
-            setup_user(message, &state).await
-        },
-        _ => { Ok(None) },
+    /*
+    * Loop until a valid and unique username is provided by the user;
+    */
+    while user.is_none() {
+        if let Some(Ok(Message::Text(user_str))) = receiver.next().await {
+            match add_user_to_state(user_str, &state).await {
+                Ok(user_res) => {
+                    user = user_res.clone();
+                    let _ = sender.send(Message::Text(serde_json::to_string(&user_res).unwrap())).await;
+                }
+                Err(e) => {
+                    let _ = sender.send(Message::Text(e.to_string())).await;
+                }
+            }
+        }
     };
-
-    dbg!(&user);
 
     let tx = state.get_transmitter();
     let rx = tx.subscribe();
@@ -85,9 +94,10 @@ async fn handle_recv_task(
 }
 
 /*
-* Setup the user when they connect to the websocket for the first time;
+* function to add the user to state
+* if appropriate
 */
-async fn setup_user(message: String, state: &AppState<UserStateInMemory>) -> Result<Option<User>, UserStateError> {
+async fn add_user_to_state(message: String, state: &AppState<UserStateInMemory>) -> Result<Option<User>, UserStateError> {
     match serde_json::from_str::<SignalType>(&message) {
         Ok(signal) => {
             match signal {

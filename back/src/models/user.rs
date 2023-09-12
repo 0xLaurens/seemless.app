@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 pub type Username = String;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct User {
  username: Username,
  user_agent: Option<String>,
