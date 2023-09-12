@@ -5,8 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 use crate::models::sdp::SessionDescriptionMessage;
+use crate::models::user::Username;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum SignalType {
     Offer(SessionDescriptionMessage),
@@ -16,4 +17,7 @@ pub enum SignalType {
     PeerJoined,
     PeerLeft,
     Peers,
+    Join {
+        username: Username
+    },
 }

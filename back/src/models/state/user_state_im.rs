@@ -25,8 +25,8 @@ impl UserManager for UserStateInMemory {
             return Err(UserStateError::UsernameNotUnique);
         }
 
-        let user = state.insert(user.get_username(), user);
-        Ok(user)
+        state.insert(user.get_username(), user.clone());
+        Ok(Some(user))
     }
 
     fn remove_user(&self, username: &Username) -> Result<Option<User>, UserStateError> {
