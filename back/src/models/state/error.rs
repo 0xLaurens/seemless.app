@@ -9,6 +9,7 @@ pub enum UserStateError {
     UsernameNotUnique,
     UserNotFound,
     PoisonError,
+    DeserializationError,
 }
 
 impl Display for UserStateError {

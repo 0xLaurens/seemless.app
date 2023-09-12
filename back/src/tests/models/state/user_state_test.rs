@@ -2,7 +2,7 @@ use std::error::Error;
 use crate::models::state::error::UserStateError;
 use crate::models::state::user_state_im::UserStateInMemory;
 use crate::models::user::{User, Username};
-use crate::models::user_manager::UserManager;
+use crate::models::state::user_manager::UserManager;
 
 #[test]
 fn validate_new_user_state_is_empty() {

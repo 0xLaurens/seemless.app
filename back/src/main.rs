@@ -16,9 +16,9 @@ async fn main() {
         .compact()
         .init();
 
-    info!("Axum running 0.0.0.0:3000");
+    info!("Axum running 0.0.0.0:4000");
 
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    axum::Server::bind(&"0.0.0.0:4000".parse().unwrap())
         .serve(app::create_app())
         .await
         .expect("Failed to launch app");

@@ -3,9 +3,9 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 use crate::models::state::error::UserStateError;
 use crate::models::user::{User, Username};
-use crate::models::user_manager::UserManager;
+use crate::models::state::user_manager::UserManager;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserStateInMemory {
     users: Arc<Mutex<HashMap<Username, User>>>
 }
@@ -25,8 +25,8 @@ impl UserManager for UserStateInMemory {
             return Err(UserStateError::UsernameNotUnique);
         }
 
-        let user = state.insert(user.get_username(), user);
-        return Ok(user);
+        state.insert(user.get_username(), user.clone());
+        Ok(Some(user))
     }
 
     fn remove_user(&self, username: &Username) -> Result<Option<User>, UserStateError> {
@@ -35,7 +35,7 @@ impl UserManager for UserStateInMemory {
             return Err(UserStateError::UserNotFound);
         }
         let user = state.remove(username);
-        return Ok(user);
+        Ok(user)
     }
 
     fn update_user(&self, user: User, username: Username) -> Result<Option<User>, UserStateError> {
