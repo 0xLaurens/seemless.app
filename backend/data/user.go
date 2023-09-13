@@ -1,16 +1,16 @@
 package data
 
-type UserId string
+type UserID string
 
 type User struct {
-	UserId   UserId `json:"client_id"`
+	ID       UserID `json:"client_id"`
 	Username string `json:"username"`
 	Device   string `json:"device"`
 }
 
 func CreateUser(Username string, Device string) *User {
 	return &User{
-		UserId:   "123",
+		ID:       "123",
 		Username: Username,
 		Device:   Device,
 	}
