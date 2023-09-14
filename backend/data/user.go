@@ -1,5 +1,7 @@
 package data
 
+import "github.com/google/uuid"
+
 type UserID string
 
 type User struct {
@@ -10,7 +12,7 @@ type User struct {
 
 func CreateUser(Username string, Device string) *User {
 	return &User{
-		ID:       "123",
+		ID:       UserID(uuid.NewString()),
 		Username: Username,
 		Device:   Device,
 	}
