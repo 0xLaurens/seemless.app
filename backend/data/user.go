@@ -2,26 +2,30 @@ package data
 
 import (
 	"github.com/gofiber/contrib/websocket"
-	"github.com/google/uuid"
 )
 
 type UserID string
 type Conn *websocket.Conn
 
+type UserOption func(*User)
+
 type User struct {
-	ID         UserID `json:"client_id"`
 	Username   string `json:"username"`
 	Device     string `json:"device"`
-	Connection Conn   `json:"connection"`
+	Connection Conn   `json:"connection,omitempty"`
 }
 
-func CreateUser(Username string, Device string, conn Conn) *User {
-	return &User{
-		ID:         UserID(uuid.NewString()),
-		Username:   Username,
-		Device:     Device,
-		Connection: conn,
+func CreateUser(username string, device string, options ...UserOption) *User {
+	user := &User{
+		Username: username,
+		Device:   device,
 	}
+
+	for _, option := range options {
+		option(user)
+	}
+
+	return user
 }
 
 func (u *User) GetUsername() string {
