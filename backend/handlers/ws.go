@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"laurensdrop/data"
+	"laurensdrop/utils"
 	"log"
 )
 
@@ -32,20 +32,11 @@ func WSHandler(c *websocket.Conn) {
 	}
 }
 
-func ParseMessageToRequest(msg []byte) (data.Request, error) {
-	req := data.Request{}
-	err := json.Unmarshal(msg, &req)
-	if err != nil {
-		return data.Request{}, err
-	}
-
-	return req, nil
-}
-
 func RequestMatcher(msg []byte) {
-	req, err := ParseMessageToRequest(msg)
+	req := data.Request{}
+	err := utils.MapJsonToStruct(msg, &req)
 	if err != nil {
-		log.Println("NotJSON")
+		log.Println("Json error", err)
 		return
 	}
 
@@ -70,5 +61,4 @@ func RequestMatcher(msg []byte) {
 	default:
 		log.Println("InvalidRequest")
 	}
-
 }
