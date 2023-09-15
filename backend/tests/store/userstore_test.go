@@ -69,7 +69,7 @@ func TestAddUserShouldAddUserToStore(t *testing.T) {
 		return
 	}
 
-	getUser, err := s.GetUser(user.ID)
+	getUser, err := s.GetUserByName(user.Username)
 	if err != nil {
 		return
 	}
@@ -117,7 +117,7 @@ func TestAddUserShouldThrowDuplicateUsernameError(t *testing.T) {
 // update user
 func TestUpdateUserShouldThrowNotFoundError(t *testing.T) {
 	s := SetupUserStore()
-	_, err := s.GetUser("1234")
+	_, err := s.GetUserByName("1234")
 
 	if err.Error() != string(data.UserStoreError.NotFound) {
 		t.Errorf("got %v expected %v", err.Error(), data.UserStoreError.NotFound)
@@ -137,12 +137,12 @@ func TestUpdateUserShouldUpdateUser(t *testing.T) {
 	}
 
 	userDTO := data.CreateUser("Jane", "Android")
-	_, err = s.UpdateUser(users[0].ID, userDTO)
+	_, err = s.UpdateUser(users[0].Username, userDTO)
 	if err != nil {
 		return
 	}
 
-	user, err := s.GetUser(users[0].ID)
+	user, err := s.GetUserByName(userDTO.Username)
 	if err != nil {
 		return
 	}
@@ -166,7 +166,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 	}
 
 	userDTO := data.CreateUser("Jane", "Android")
-	_, err = s.UpdateUser(preUpdate[0].ID, userDTO)
+	_, err = s.UpdateUser(preUpdate[0].Username, userDTO)
 	if err != nil {
 		return
 	}
@@ -213,7 +213,7 @@ func TestRemoveUserShouldDeleteUser(t *testing.T) {
 	}
 	preDeleteUsers, err := s.GetAllUsers()
 
-	_, err = s.RemoveUser(preDeleteUsers[0].ID)
+	_, err = s.RemoveUser(preDeleteUsers[0].Username)
 	if err != nil {
 		return
 	}
@@ -236,7 +236,7 @@ func TestGetUserShouldReturnErrorWhenUserNotFound(t *testing.T) {
 		return
 	}
 
-	_, err = s.RemoveUser("bsID")
+	_, err = s.RemoveUser("bsUsername")
 	if err.Error() != string(data.UserStoreError.NotFound) {
 		t.Errorf("got %s expected %s", err.Error(), string(data.UserStoreError.NotFound))
 	}
