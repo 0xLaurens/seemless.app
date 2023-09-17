@@ -2,16 +2,15 @@ package store
 
 import (
 	"laurensdrop/data"
-	"laurensdrop/store"
 	"testing"
 )
 
 // setup
-func SetupUserStore() store.UserStore {
-	return store.NewUserStoreInMemory()
+func SetupUserStore() UserStore {
+	return NewUserStoreInMemory()
 }
 
-func SeedData(s store.UserStore) (int, error) {
+func SeedData(s UserStore) (int, error) {
 	users := []*data.User{
 		data.CreateUser("Jane", "Android"),
 		data.CreateUser("John", "Iphone"),
@@ -178,6 +177,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 
 	if len(preUpdate) != len(postUpdate) {
 		t.Errorf("got %v expected %v", len(preUpdate), len(postUpdate))
+    t.Errorf("%v : %v", preUpdate, postUpdate)
 	}
 
 }
