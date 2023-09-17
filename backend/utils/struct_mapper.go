@@ -5,6 +5,5 @@ import (
 )
 
 func MapJsonToStruct(message []byte, target interface{}) error {
-	err := json.Unmarshal(message, &target)
-	return err
+	return json.Unmarshal(message, &target)
 }
