@@ -177,6 +177,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 
 	if len(preUpdate) != len(postUpdate) {
 		t.Errorf("got %v expected %v", len(preUpdate), len(postUpdate))
+    t.Errorf("%v : %v", preUpdate, postUpdate)
 	}
 
 }
