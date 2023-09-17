@@ -10,7 +10,7 @@ backend-test:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - cd backend
-    - go test 
+    - go test -v ./...
 
 frontend-test:
   stage: test
