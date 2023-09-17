@@ -5,24 +5,24 @@ type Request struct {
 	UserId UserID      `json:"userId"`
 }
 
-type RequestType int
+type RequestType string
 
 const (
-	Offer RequestType = iota
-	Answer
-	NewIceCandidate
-	PeerJoined
-	PeerLeft
-	PeerUpdated
+	Offer           RequestType = "Offer"
+	Answer          RequestType = "Answer"
+	NewIceCandidate RequestType = "NewIceCandidate"
+	PeerJoined      RequestType = "PeerJoined"
+	PeerLeft        RequestType = "PeerLeft"
+	PeerUpdated     RequestType = "PeerUpdated"
 )
 
-func (t RequestType) Parse() string {
-	return []string{
-		"Offer",
-		"Answer",
-		"NewIceCandidate",
-		"PeerJoined",
-		"PeerLeft",
-		"PeerUpdated",
-	}[t]
-}
+//func (t RequestType) Parse() string {
+//	return []string{
+//		"Offer",
+//		"Answer",
+//		"NewIceCandidate",
+//		"PeerJoined",
+//		"PeerLeft",
+//		"PeerUpdated",
+//	}[t]
+//}

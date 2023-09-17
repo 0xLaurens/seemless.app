@@ -6,30 +6,30 @@ import (
 )
 
 type UserStoreInMemory struct {
-	Users     map[data.UserID]*data.User
-	Usernames map[string]bool
+	Users map[string]*data.User    //username -> user
+	Conns map[data.Conn]*data.User //ws conn -> user
 }
 
 func NewUserStoreInMemory() *UserStoreInMemory {
 	return &UserStoreInMemory{
-		Users:     map[data.UserID]*data.User{},
-		Usernames: map[string]bool{},
+		Users: map[string]*data.User{},
+		Conns: map[data.Conn]*data.User{},
 	}
 }
 
 func (s *UserStoreInMemory) AddUser(u *data.User) (*data.User, error) {
-	_, exists := s.Usernames[u.Username]
+	_, exists := s.Users[u.Username]
 	if exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.DuplicateUsername))
 	}
 
-	s.Users[u.ID] = u
-	s.Usernames[u.Username] = true
+	s.Users[u.Username] = u
+	s.Conns[u.Connection] = u
 	return u, nil
 }
 
-func (s *UserStoreInMemory) GetUser(ID data.UserID) (*data.User, error) {
-	user, exists := s.Users[ID]
+func (s *UserStoreInMemory) GetUserByName(username string) (*data.User, error) {
+	user, exists := s.Users[username]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
 	}
@@ -37,31 +37,39 @@ func (s *UserStoreInMemory) GetUser(ID data.UserID) (*data.User, error) {
 	return user, nil
 }
 
-func (s *UserStoreInMemory) UpdateUser(ID data.UserID, UserDTO *data.User) (*data.User, error) {
-	user, exists := s.Users[ID]
+func (s *UserStoreInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
+	user, exists := s.Conns[conn]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
 	}
 
-	delete(s.Usernames, user.Username)
+	return user, nil
+}
 
-	user.Username = UserDTO.Username
-	user.Device = UserDTO.Device
+func (s *UserStoreInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
+	user, exists := s.Users[username]
+	if !exists {
+		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
+	}
 
-	s.Usernames[user.Username] = true
-	s.Users[ID] = user
+	delete(s.Users, user.Username)
+
+	user.Username = userDTO.Username
+	user.Device = userDTO.Device
+
+	s.Users[userDTO.Username] = userDTO
 
 	return user, nil
 }
 
-func (s *UserStoreInMemory) RemoveUser(ID data.UserID) ([]*data.User, error) {
-	user, exists := s.Users[ID]
+func (s *UserStoreInMemory) RemoveUser(username string) ([]*data.User, error) {
+	user, exists := s.Users[username]
 	if !exists {
 		return nil, fmt.Errorf("user does not exist")
 	}
 
-	delete(s.Users, ID)
-	delete(s.Usernames, user.Username)
+	delete(s.Users, username)
+	delete(s.Conns, user.Connection)
 
 	return s.GetAllUsers()
 }

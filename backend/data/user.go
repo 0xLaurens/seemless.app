@@ -1,21 +1,31 @@
 package data
 
-import "github.com/google/uuid"
+import (
+	"github.com/gofiber/contrib/websocket"
+)
 
 type UserID string
+type Conn *websocket.Conn
+
+type UserOption func(*User)
 
 type User struct {
-	ID       UserID `json:"client_id"`
-	Username string `json:"username"`
-	Device   string `json:"device"`
+	Username   string `json:"username"`
+	Device     string `json:"device"`
+	Connection Conn   `json:"connection,omitempty"`
 }
 
-func CreateUser(Username string, Device string) *User {
-	return &User{
-		ID:       UserID(uuid.NewString()),
-		Username: Username,
-		Device:   Device,
+func CreateUser(username string, device string, options ...UserOption) *User {
+	user := &User{
+		Username: username,
+		Device:   device,
 	}
+
+	for _, option := range options {
+		option(user)
+	}
+
+	return user
 }
 
 func (u *User) GetUsername() string {
@@ -28,4 +38,8 @@ func (u *User) GetDevice() string {
 
 func (u *User) UpdateUsername(Username string) {
 	u.Username = Username
+}
+
+func (u *User) GetConnection() Conn {
+	return u.Connection
 }
