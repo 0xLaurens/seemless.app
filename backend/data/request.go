@@ -7,14 +7,21 @@ type Request struct {
 
 type RequestType string
 
-const (
-	Offer           RequestType = "Offer"
-	Answer          RequestType = "Answer"
-	NewIceCandidate RequestType = "NewIceCandidate"
-	PeerJoined      RequestType = "PeerJoined"
-	PeerLeft        RequestType = "PeerLeft"
-	PeerUpdated     RequestType = "PeerUpdated"
-)
+var RequestTypes = struct {
+	Offer           RequestType
+	Answer          RequestType
+	NewIceCandidate RequestType
+	PeerJoined      RequestType
+	PeerLeft        RequestType
+	PeerUpdated     RequestType
+}{
+	Offer:           "Offer",
+	Answer:          "Answer",
+	NewIceCandidate: "NewIceCandidate",
+	PeerJoined:      "PeerJoined",
+	PeerLeft:        "PeerLeft",
+	PeerUpdated:     "PeerUpdated",
+}
 
 //func (t RequestType) Parse() string {
 //	return []string{
