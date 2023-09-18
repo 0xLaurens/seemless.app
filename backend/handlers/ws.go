@@ -17,15 +17,24 @@ func WSUpgrader(c *fiber.Ctx) error {
 }
 
 func WSHandler(c *websocket.Conn, hub *Hub) {
-	go hub.run()
 	username := rand.Intn(100)
-	user := data.CreateUser(string(rune(username)), "andoird", data.WithConnection(c))
+	user := data.CreateUser(string(rune(username)), "android", data.WithConnection(c))
+	defer func() {
+		log.Println("DBG -->> defer ws handler")
+		hub.channels.unregister <- user
+		err := c.Close()
+		if err != nil {
+			log.Println("ERR -->> failed to close connection")
+			return
+		}
+	}()
 	hub.channels.register <- user
-	log.Printf("created user: %v", user)
+	log.Printf("DBG -->> created user: %v", user.Username)
 	for {
 		_, msg, err := c.ReadMessage()
 		if err != nil {
-			log.Fatal("ERR -->>", err)
+			log.Println("ERR -->> read message", err)
+			return
 		}
 		log.Printf("DBG -->> recv: %s", msg)
 		RequestMatcher(msg, hub)
@@ -37,7 +46,7 @@ func RequestMatcher(msg []byte, hub *Hub) {
 	req := data.Request{}
 	err := utils.MapJsonToStruct(msg, &req)
 	if err != nil {
-		log.Fatal("ERR -->> json matching", err)
+		log.Println("ERR -->> json matching", err)
 		return
 	}
 
@@ -50,8 +59,7 @@ func RequestMatcher(msg []byte, hub *Hub) {
 		data.NewIceCandidate:
 		log.Println("")
 		hub.channels.broadcast <- msg
-		break
 	default:
-		log.Fatal("ERR -->> invalid request")
+		log.Println("ERR -->> invalid request")
 	}
 }
