@@ -62,7 +62,7 @@ func (h *Hub) Run() {
 				return
 			}
 		case user := <-h.channels.unregister:
-			log.Println("DBG -->> register", user)
+			log.Println("DBG -->> unregister", user)
 			_, err := h.users.RemoveUser(user.Username)
 			if err != nil {
 				log.Fatal("ERR -->> unregister failed", err)
