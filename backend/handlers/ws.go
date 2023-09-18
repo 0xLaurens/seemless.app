@@ -37,12 +37,12 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 			return
 		}
 		log.Printf("DBG -->> recv: %s", msg)
-		RequestMatcher(msg, hub, user)
+		WsRequestHandler(msg, hub, user)
 	}
 }
 
-func RequestMatcher(msg []byte, hub *Hub, user *data.User) {
-	log.Println("DBG -->> request matcher")
+func WsRequestHandler(msg []byte, hub *Hub, user *data.User) {
+	log.Println("DBG -->> ws request handler")
 	req := data.Request{}
 	err := utils.MapJsonToStruct(msg, &req)
 	if err != nil {
