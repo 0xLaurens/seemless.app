@@ -12,6 +12,7 @@ func main() {
 	// init in memory store and hub
 	s := store.NewUserStoreInMemory()
 	hub := handlers.CreateHub(s)
+	go hub.Run()
 
 	app := fiber.New()
 
