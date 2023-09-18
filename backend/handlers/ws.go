@@ -6,6 +6,7 @@ import (
 	"laurensdrop/data"
 	"laurensdrop/utils"
 	"log"
+	"math/rand"
 )
 
 func WSUpgrader(c *fiber.Ctx) error {
@@ -15,50 +16,42 @@ func WSUpgrader(c *fiber.Ctx) error {
 	return fiber.ErrUpgradeRequired
 }
 
-func WSHandler(c *websocket.Conn) {
+func WSHandler(c *websocket.Conn, hub *Hub) {
+	go hub.run()
+	username := rand.Intn(100)
+	user := data.CreateUser(string(rune(username)), "andoird", data.WithConnection(c))
+	hub.channels.register <- user
+	log.Printf("created user: %v", user)
 	for {
-		mt, msg, err := c.ReadMessage()
+		_, msg, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read: ", err)
-			break
+			log.Fatal("ERR -->>", err)
 		}
-		log.Printf("recv: %s", msg)
-		RequestMatcher(msg)
-
-		if err = c.WriteMessage(mt, msg); err != nil {
-			log.Println("write:", err)
-			break
-		}
+		log.Printf("DBG -->> recv: %s", msg)
+		RequestMatcher(msg, hub)
 	}
 }
 
-func RequestMatcher(msg []byte) {
+func RequestMatcher(msg []byte, hub *Hub) {
+	log.Println("DBG -->> request matcher")
 	req := data.Request{}
 	err := utils.MapJsonToStruct(msg, &req)
 	if err != nil {
-		log.Println("Json error", err)
+		log.Fatal("ERR -->> json matching", err)
 		return
 	}
 
 	switch req.Type {
-	case data.Offer:
-		log.Println("Offer")
+	case data.Offer,
+		data.Answer,
+		data.PeerLeft,
+		data.PeerUpdated,
+		data.PeerJoined,
+		data.NewIceCandidate:
+		log.Println("")
+		hub.channels.broadcast <- msg
 		break
-	case data.Answer:
-		log.Println("Answer")
-		break
-	case data.PeerLeft:
-		log.Println("PeerLeft")
-		break
-	case data.PeerJoined:
-		log.Println("PeerJoined")
-		break
-	case data.PeerUpdated:
-		log.Println("PeerUpdated")
-		break
-	case data.NewIceCandidate:
-		log.Println("NewIceCandidate")
 	default:
-		log.Println("InvalidRequest")
+		log.Fatal("ERR -->> invalid request")
 	}
 }
