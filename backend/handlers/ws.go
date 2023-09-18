@@ -37,11 +37,11 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 			return
 		}
 		log.Printf("DBG -->> recv: %s", msg)
-		RequestMatcher(msg, hub)
+		RequestMatcher(msg, hub, user)
 	}
 }
 
-func RequestMatcher(msg []byte, hub *Hub) {
+func RequestMatcher(msg []byte, hub *Hub, user *data.User) {
 	log.Println("DBG -->> request matcher")
 	req := data.Request{}
 	err := utils.MapJsonToStruct(msg, &req)
@@ -61,5 +61,6 @@ func RequestMatcher(msg []byte, hub *Hub) {
 		hub.channels.broadcast <- msg
 	default:
 		log.Println("ERR -->> invalid request")
+		hub.channels.invalidMessage <- user
 	}
 }
