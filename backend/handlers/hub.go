@@ -34,13 +34,12 @@ func CreateHub(Store store.UserStore) *Hub {
 	}
 }
 
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	for {
 		select {
 		case msg := <-h.channels.broadcast:
 			log.Println("DBG -->> broadcast")
 			users, err := h.users.GetAllUsers()
-			log.Println(users)
 			if err != nil {
 				return
 			}
