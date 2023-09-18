@@ -15,6 +15,13 @@ type User struct {
 	Connection Conn   `json:"connection,omitempty"`
 }
 
+// WithConnection helper function for create user to pass a connection
+func WithConnection(conn Conn) UserOption {
+	return func(u *User) {
+		u.Connection = conn
+	}
+}
+
 func CreateUser(username string, device string, options ...UserOption) *User {
 	user := &User{
 		Username: username,
