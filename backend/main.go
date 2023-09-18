@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"laurensdrop/handlers"
 	"laurensdrop/store"
 	"log"
@@ -24,6 +25,9 @@ func main() {
 	app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
 		handlers.WSHandler(conn, hub)
 	}))
+
+	// MONITOR IS STILL IN BETA, API MIGHT CHANGE
+	app.Use("/monitor", monitor.New())
 
 	log.Fatal(app.Listen(":3000"))
 }
