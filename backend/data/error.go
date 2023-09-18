@@ -12,10 +12,11 @@ var UserStoreError = struct {
 }
 
 // WsErr is a wrapper type for WS related errors
-type WsErr string
+type WsErr int
 
+// WsError NOTE: should be up-to-date with http status codes
 var WsError = struct {
 	InvalidRequestBody WsErr
 }{
-	InvalidRequestBody: "request body was not formatted properly",
+	InvalidRequestBody: 400,
 }
