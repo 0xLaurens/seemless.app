@@ -47,16 +47,17 @@ func WsRequestHandler(msg []byte, hub *Hub, user *data.User) {
 	err := utils.MapJsonToStruct(msg, &req)
 	if err != nil {
 		log.Println("ERR -->> json matching", err)
+		hub.channels.invalidMessage <- user
 		return
 	}
 
 	switch req.Type {
-	case data.Offer,
-		data.Answer,
-		data.PeerLeft,
-		data.PeerUpdated,
-		data.PeerJoined,
-		data.NewIceCandidate:
+	case data.RequestTypes.Offer,
+		data.RequestTypes.Answer,
+		data.RequestTypes.PeerLeft,
+		data.RequestTypes.PeerUpdated,
+		data.RequestTypes.PeerJoined,
+		data.RequestTypes.NewIceCandidate:
 		log.Println("")
 		hub.channels.broadcast <- msg
 	default:
