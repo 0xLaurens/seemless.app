@@ -1,20 +1,30 @@
 package data
 
 type Request struct {
-	Type   RequestType `json:"type"`
-	UserId UserID      `json:"userId"`
+	Type RequestType       `json:"type"`
+	From string            `json:"from"`
+	Body map[string]string `json:"body"`
 }
 
 type RequestType string
 
-const (
-	Offer           RequestType = "Offer"
-	Answer          RequestType = "Answer"
-	NewIceCandidate RequestType = "NewIceCandidate"
-	PeerJoined      RequestType = "PeerJoined"
-	PeerLeft        RequestType = "PeerLeft"
-	PeerUpdated     RequestType = "PeerUpdated"
-)
+var RequestTypes = struct {
+	Offer           RequestType
+	Answer          RequestType
+	NewIceCandidate RequestType
+	PeerJoined      RequestType
+	PeerLeft        RequestType
+	PeerUpdated     RequestType
+	Username        RequestType
+}{
+	Offer:           "Offer",
+	Answer:          "Answer",
+	NewIceCandidate: "NewIceCandidate",
+	PeerJoined:      "PeerJoined",
+	PeerLeft:        "PeerLeft",
+	PeerUpdated:     "PeerUpdated",
+	Username:        "Username",
+}
 
 //func (t RequestType) Parse() string {
 //	return []string{

@@ -8,8 +8,8 @@ import (
 
 func TestValidJsonMapsToObject(t *testing.T) {
 	msg, _ := json.Marshal(data.Request{
-		Type:   "PeerJoin",
-		UserId: "123",
+		Type: "PeerJoin",
+		From: "John",
 	})
 
 	req := &data.Request{}
@@ -19,7 +19,7 @@ func TestValidJsonMapsToObject(t *testing.T) {
 		return
 	}
 
-	if req.Type == "" || req.UserId == "" {
+	if req.Type == "" || req.From == "" {
 		t.Errorf("Struct Did not map properly %v", req)
 	}
 }
@@ -39,7 +39,7 @@ func TestValidJsonMissingFieldsWorks(t *testing.T) {
 		t.Errorf("Struct Did not map properly %v", req)
 	}
 
-	if req.UserId != "" {
+	if req.From != "" {
 		t.Errorf("Struct Did not map properly %v", req)
 	}
 }

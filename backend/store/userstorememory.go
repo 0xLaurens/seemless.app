@@ -57,7 +57,10 @@ func (s *UserStoreInMemory) UpdateUser(username string, userDTO *data.User) (*da
 	user.Username = userDTO.Username
 	user.Device = userDTO.Device
 
-	s.Users[userDTO.Username] = userDTO
+	_, err := s.AddUser(user)
+	if err != nil {
+		return nil, err
+	}
 
 	return user, nil
 }
@@ -65,7 +68,7 @@ func (s *UserStoreInMemory) UpdateUser(username string, userDTO *data.User) (*da
 func (s *UserStoreInMemory) RemoveUser(username string) ([]*data.User, error) {
 	user, exists := s.Users[username]
 	if !exists {
-		return nil, fmt.Errorf("user does not exist")
+		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
 	}
 
 	delete(s.Users, username)

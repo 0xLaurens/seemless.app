@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/stretchr/testify/assert"
 	"laurensdrop/data"
 	"testing"
 )
@@ -177,7 +178,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 
 	if len(preUpdate) != len(postUpdate) {
 		t.Errorf("got %v expected %v", len(preUpdate), len(postUpdate))
-    t.Errorf("%v : %v", preUpdate, postUpdate)
+		t.Errorf("%v : %v", preUpdate, postUpdate)
 	}
 
 }
@@ -237,7 +238,5 @@ func TestGetUserShouldReturnErrorWhenUserNotFound(t *testing.T) {
 	}
 
 	_, err = s.RemoveUser("bsUsername")
-	if err.Error() != string(data.UserStoreError.NotFound) {
-		t.Errorf("got %s expected %s", err.Error(), string(data.UserStoreError.NotFound))
-	}
+	assert.Equal(t, data.UserStoreErrMessage(data.UserStoreError.NotFound), err.Error())
 }
