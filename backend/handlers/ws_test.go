@@ -51,6 +51,27 @@ func runTestApp() (*fiber.App, chan struct{}) {
 	return app, done
 }
 
+// joinHelper joins websocket with identification
+func joinHelper(conn *ws.Conn) {
+	req := fiber.Map{
+		"type": data.RequestTypes.Username,
+		"body": fiber.Map{
+			"username": "user",
+		},
+	}
+
+	err := conn.WriteJSON(req)
+	if err != nil {
+		return
+	}
+
+	_, _, err = conn.ReadMessage()
+	_, _, err = conn.ReadMessage()
+	if err != nil {
+		return
+	}
+}
+
 func TestInvalidWebsocketRequestShouldReturnUpgradeRequired(t *testing.T) {
 	app := setupTestApp()
 	req := httptest.NewRequest(http.MethodTrace, "/ws", nil)
@@ -104,6 +125,8 @@ func TestWsHandlerInvalidJsonToReturnInvalidRequest(t *testing.T) {
 	}
 	assert.Equal(t, 101, resp.StatusCode)
 	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+
+	joinHelper(conn)
 
 	message := "Hello World!"
 	err = conn.WriteMessage(websocket.TextMessage, []byte(message))
@@ -391,6 +414,7 @@ func TestWsHandlerInvalidStatusToReturnInvalidRequest(t *testing.T) {
 	}
 	assert.Equal(t, 101, resp.StatusCode)
 	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+	joinHelper(conn)
 
 	message, err := json.Marshal(data.Request{
 		Type: "NonExistentType",
@@ -438,6 +462,7 @@ func TestWsHandlerRequestTypesShouldBroadcast(t *testing.T) {
 	}
 	assert.Equal(t, 101, resp.StatusCode)
 	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+	joinHelper(conn)
 
 	types := []data.RequestType{
 		data.RequestTypes.PeerJoined,
