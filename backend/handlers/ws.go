@@ -42,16 +42,20 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 
 		username = req.Body["username"]
 		if username == "" || req.Type != data.RequestTypes.Username {
+			err := data.WsError.InvalidRequestBody
 			writeMSG(c, fiber.Map{
-				"type":    data.WsError.InvalidRequestBody,
-				"message": "Please Send the right format for the username request",
+				"type":    data.WsErrorType(err),
+				"message": data.WsErrorMessage(err),
 			})
+			username = ""
 		}
 
-		if u, _ := hub.users.GetUserByName(username); u != nil {
+		if u, _ := hub.users.GetUserByName(username); u != nil && req.Type != data.RequestTypes.Username {
+
+			err := data.UserStoreError.DuplicateUsername
 			writeMSG(c, fiber.Map{
-				"type":    data.UserStoreError.DuplicateUsername,
-				"message": "duplicate username error",
+				"type":    err,
+				"message": data.UserStoreErrMessage(err),
 			})
 			username = ""
 		}
