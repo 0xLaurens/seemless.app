@@ -262,6 +262,57 @@ func TestWsHandlerUsernameRequestValidTypeInvalidBody(t *testing.T) {
 	}
 }
 
+func TestWsHandlerUsernameShouldJoin(t *testing.T) {
+	app, done := runTestApp()
+	defer app.Shutdown()
+	<-done
+
+	url := "ws://localhost:5420/ws"
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	assert.Equal(t, 100, resp.StatusCode)
+	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+
+	expected := fiber.Map{
+		"message": "provide a username",
+		"type":    "UsernamePrompt",
+	}
+	var res fiber.Map
+	err = conn.ReadJSON(&res)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+
+	req := fiber.Map{
+		"type": "Username",
+		"body": fiber.Map{
+			"username": "user",
+		},
+	}
+
+	err = conn.WriteJSON(req)
+	assert.NoError(t, err)
+
+	err = conn.ReadJSON(&res)
+	assert.NoError(t, err)
+
+	expected = fiber.Map{
+		"type":     data.RequestTypes.PeerJoined,
+		"username": "user",
+	}
+
+	assert.Equal(t, expected, res)
+
+	err = app.Shutdown()
+	if err != nil {
+		t.Fatal("TEST ERR -->> failed to shutdown server", err)
+	}
+}
+
 func TestWsHandlerInvalidStatusToReturnInvalidRequest(t *testing.T) {
 	app, done := runTestApp()
 	defer app.Shutdown()
