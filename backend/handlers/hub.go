@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"laurensdrop/data"
 	"laurensdrop/store"
@@ -43,17 +44,7 @@ func (h *Hub) Run() {
 		select {
 		case msg := <-h.channels.broadcast:
 			log.Println("DBG -->> broadcast")
-			users, err := h.users.GetAllUsers()
-			if err != nil {
-				return
-			}
-
-			for _, u := range users {
-				err := u.Connection.Conn.WriteMessage(1, msg)
-				if err != nil {
-					return
-				}
-			}
+			h.broadcastMessage(msg)
 		case user := <-h.channels.register:
 			log.Println("DBG -->> register", user)
 			_, err := h.users.AddUser(user)
@@ -61,6 +52,15 @@ func (h *Hub) Run() {
 				log.Println("ERR -->> register failed", err)
 				return
 			}
+			msg, err := json.Marshal(fiber.Map{
+				"type":     data.RequestTypes.PeerJoined,
+				"username": user.Username,
+			})
+			if err != nil {
+				log.Println("ERR -->> json marshal failed", err)
+				return
+			}
+			h.broadcastMessage(msg)
 		case user := <-h.channels.unregister:
 			log.Println("DBG -->> unregister", user)
 			_, err := h.users.RemoveUser(user.Username)
@@ -68,6 +68,15 @@ func (h *Hub) Run() {
 				log.Println("ERR -->> unregister failed", err)
 				return
 			}
+			msg, err := json.Marshal(fiber.Map{
+				"type":     data.RequestTypes.PeerLeft,
+				"username": user.Username,
+			})
+			if err != nil {
+				log.Println("ERR -->> json marshal failed", err)
+				return
+			}
+			h.broadcastMessage(msg)
 		case user := <-h.channels.invalidMessage:
 			log.Println("DBG -->> invalid message")
 			errRes := fiber.NewError(int(data.WsError.InvalidRequestBody))
@@ -83,6 +92,19 @@ func (h *Hub) Run() {
 				return
 			}
 
+		}
+	}
+}
+
+func (h *Hub) broadcastMessage(msg []byte) {
+	users, err := h.users.GetAllUsers()
+	if err != nil {
+		return
+	}
+	for _, u := range users {
+		err := u.Connection.Conn.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			return
 		}
 	}
 }

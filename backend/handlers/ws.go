@@ -60,10 +60,6 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 		}
 	}
 
-	writeMSG(c, fiber.Map{
-		"type":     data.RequestTypes.PeerJoined,
-		"username": username,
-	})
 	user := data.CreateUser(username, "android", data.WithConnection(c))
 	hub.channels.register <- user
 
