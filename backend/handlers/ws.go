@@ -50,8 +50,7 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 			username = ""
 		}
 
-		if u, _ := hub.users.GetUserByName(username); u != nil && req.Type != data.RequestTypes.Username {
-
+		if u, _ := hub.users.GetUserByName(username); u != nil || req.Type != data.RequestTypes.Username {
 			err := data.UserStoreError.DuplicateUsername
 			writeMSG(c, fiber.Map{
 				"type":    err,
