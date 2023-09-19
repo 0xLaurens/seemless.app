@@ -58,14 +58,14 @@ func (h *Hub) Run() {
 			log.Println("DBG -->> register", user)
 			_, err := h.users.AddUser(user)
 			if err != nil {
-				log.Fatal("ERR -->> register failed", err)
+				log.Println("ERR -->> register failed", err)
 				return
 			}
 		case user := <-h.channels.unregister:
 			log.Println("DBG -->> unregister", user)
 			_, err := h.users.RemoveUser(user.Username)
 			if err != nil {
-				log.Fatal("ERR -->> unregister failed", err)
+				log.Println("ERR -->> unregister failed", err)
 				return
 			}
 		case user := <-h.channels.invalidMessage:
