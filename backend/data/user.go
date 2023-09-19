@@ -4,9 +4,7 @@ import (
 	"github.com/gofiber/contrib/websocket"
 )
 
-type UserID string
 type Conn *websocket.Conn
-
 type UserOption func(*User)
 
 type User struct {
