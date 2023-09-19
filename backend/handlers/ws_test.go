@@ -131,6 +131,35 @@ func TestWsHandlerInvalidJsonToReturnInvalidRequest(t *testing.T) {
 	}
 }
 
+func TestWsHandlerPromptsForUsername(t *testing.T) {
+	app, done := runTestApp()
+	defer app.Shutdown()
+	<-done
+
+	url := "ws://localhost:5421/ws"
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	defer conn.Close()
+	if err != nil {
+		return
+	}
+	assert.Equal(t, 101, resp.StatusCode)
+	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+
+	expected := fiber.Map{
+		"message": "provide a username",
+		"type":    "UsernamePrompt",
+	}
+	var res fiber.Map
+	err = conn.ReadJSON(&res)
+
+	assert.Equal(t, expected, res)
+
+	err = app.Shutdown()
+	if err != nil {
+		t.Fatal("TEST ERR -->> failed to shutdown server", err)
+	}
+}
+
 func TestWsHandlerInvalidStatusToReturnInvalidRequest(t *testing.T) {
 	app, done := runTestApp()
 	defer app.Shutdown()
