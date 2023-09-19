@@ -177,3 +177,49 @@ func TestWsHandlerInvalidStatusToReturnInvalidRequest(t *testing.T) {
 		t.Fatal("TEST ERR -->> failed to shutdown server", err)
 	}
 }
+
+func TestWsHandlerRequestTypesShouldBroadcast(t *testing.T) {
+	app, done := runTestApp()
+	defer app.Shutdown()
+	<-done
+
+	url := "ws://localhost:5421/ws"
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	defer conn.Close()
+	if err != nil {
+		return
+	}
+	assert.Equal(t, 101, resp.StatusCode)
+	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
+
+	types := []data.RequestType{
+		data.RequestTypes.PeerJoined,
+		data.RequestTypes.PeerLeft,
+		data.RequestTypes.PeerUpdated,
+		data.RequestTypes.NewIceCandidate,
+		data.RequestTypes.Answer,
+		data.RequestTypes.Offer,
+	}
+	for _, request := range types {
+		message, err := json.Marshal(data.Request{
+			Type: request,
+		})
+		if err != nil {
+			t.Fatal("TEST ERR -->> failed to marshal request", err)
+		}
+		err = conn.WriteMessage(websocket.TextMessage, message)
+		if err != nil {
+			t.Fatal("TEST ERR -->> failed to send message", err)
+		}
+		_, res, err := conn.ReadMessage()
+		if err != nil {
+			t.Fatal("TEST ERR -->> failed to recv message", err)
+		}
+		assert.Equal(t, message, res)
+	}
+
+	err = app.Shutdown()
+	if err != nil {
+		t.Fatal("TEST ERR -->> failed to shutdown server", err)
+	}
+}
