@@ -1,0 +1,25 @@
+stages:
+  - test
+
+backend-test:
+  stage: test
+  image: golang:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - cd backend
+    - go test -v ./... -count=1
+
+frontend-test:
+  stage: test
+  image: node:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - cd frontend
+    - npm install --progress=false
+    - npm run test:unit
