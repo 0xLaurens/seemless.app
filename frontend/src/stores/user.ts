@@ -5,7 +5,7 @@ export const useUserStore = defineStore('user', () => {
   const username = ref('')
 
   function getUsername(): string {
-    return username
+    return username.value
   }
 
   function setUsername(name: string) {
