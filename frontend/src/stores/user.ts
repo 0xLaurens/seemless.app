@@ -1,19 +1,19 @@
-import {defineStore} from "pinia";
-import {ref} from "vue";
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useUserStore = defineStore('user', () => {
-    const username = ref()
-    function getUsername(): string {
-        return username
-    }
+  const username = ref('')
 
-    function setUsername(name: string) {
-        username.value = name
-    }
+  function getUsername(): string {
+    return username
+  }
 
-    return {
-        username,
-        getUsername,
-        setUsername,
-    }
+  function setUsername(name: string) {
+    username.value = name
+  }
+
+  return {
+    getUsername,
+    setUsername
+  }
 })
