@@ -1,35 +1,14 @@
-@import './base.css';
+@import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap');
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-weight: normal;
+
+.hind {
+    font-family: 'Hind', sans-serif;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+* {
+    font-family: 'Montserrat', sans-serif;
 }
