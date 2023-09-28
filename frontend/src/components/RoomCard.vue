@@ -3,6 +3,7 @@ import { useModalStore } from '@/stores/modal'
 
 const modal = useModalStore()
 defineProps({
+  roomId: String,
   title: String,
   description: String,
   modalTitle: String,
@@ -14,6 +15,7 @@ defineProps({
 <template>
   <div
     class="card bg-base-300 w-96 shadow-2xl ml-0 m-12 py-6 hover:shadow-primary hover:cursor-pointer"
+    @click="$router.push(`/room/${roomId}`)"
   >
     <button
       class="absolute btn btn-primary btn-circle btn-sm self-end mr-3"
@@ -26,7 +28,9 @@ defineProps({
       <p class="hind text-base normal-case text-gray-500 mb-4">
         {{ description || 'Description' }}
       </p>
-      <button class="btn w-full btn-primary">Connect</button>
+      <button @click="$router.push(`/room/${roomId}`)" class="btn w-full btn-primary">
+        Connect
+      </button>
     </div>
   </div>
 </template>

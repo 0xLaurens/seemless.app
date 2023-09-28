@@ -19,6 +19,7 @@ const user = useUserStore()
       </div>
       <div class="rooms flex">
         <RoomCard
+          room-id="local"
           modal-title="Local Network"
           modal-message="The Local Network is based on IP ranges. People with the same public IP address will be connected to each other."
           modal-btn-text="I understand"
@@ -26,6 +27,7 @@ const user = useUserStore()
           description="Share Files on local network"
         />
         <RoomCard
+          room-id="outside"
           modal-title="Outside Network"
           modal-message="If you want to connect to members outside of your network connection you will have to use the outside local network option. The server will use a stun server to find routing to each other"
           modal-btn-text="I understand"
