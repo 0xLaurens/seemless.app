@@ -23,9 +23,14 @@ export const useModalStore = defineStore('modal', () => {
     return isActive.value
   }
 
-  function trigger(settings: { title: string; message: string; btnText?: string }) {
-    title.value = settings.title
-    message.value = settings.message
+  function trigger(settings: { title?: string; message?: string; btnText?: string }) {
+    if (settings.title) {
+      title.value = settings.title
+    }
+
+    if (settings.message) {
+      message.value = settings.message
+    }
 
     btnText.value = settings.btnText != null ? settings.btnText : 'Accept'
 

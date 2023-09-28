@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
-import { useModalStore } from '@/stores/modal'
+import RoomCard from '@/components/RoomCard.vue'
 
 const user = useUserStore()
-const modal = useModalStore()
 </script>
 
 <template>
@@ -18,48 +17,21 @@ const modal = useModalStore()
           discoverable in.
         </p>
       </div>
-      <div class="rooms flex justify-between">
-        <div class="card bg-base-300 w-96 shadow-2xl py-6 ml-0 m-12">
-          <button
-            class="absolute btn btn-primary btn-circle btn-sm self-end mr-3"
-            @click="
-              modal.trigger({
-                title: 'Local Network',
-                message:
-                  'The Local Network is based on IP ranges. People with the same public IP address will be connected to each other.',
-                btnText: 'I understand'
-              })
-            "
-          >
-            ?
-          </button>
-          <div class="card-body flex items-center text-center">
-            <h2 class="card-title text-white text-2xl font-extrabold">Local Network</h2>
-            <p class="hind text-base normal-case text-gray-500">Share files on local network</p>
-          </div>
-        </div>
-
-        <div class="card card-hover bg-base-300 w-96 shadow-2xl py-6 ml-0 m-12">
-          <button
-            class="absolute btn btn-primary btn-circle btn-sm self-end mr-3"
-            @click="
-              modal.trigger({
-                title: 'Outside Local Network',
-                message:
-                  'If you want to connect to members outside of your network connection you will have to use the outside local network option',
-                btnText: 'I understand'
-              })
-            "
-          >
-            ?
-          </button>
-          <div class="card-body flex items-center text-center">
-            <h2 class="card-title text-white text-2xl font-extrabold">Outside Network</h2>
-            <p class="hind text-base normal-case text-gray-500">
-              Share files with people on other connections
-            </p>
-          </div>
-        </div>
+      <div class="rooms flex">
+        <RoomCard
+          modal-title="Local Network"
+          modal-message="The Local Network is based on IP ranges. People with the same public IP address will be connected to each other."
+          modal-btn-text="I understand"
+          title="Local Network"
+          description="Share Files on local network"
+        />
+        <RoomCard
+          modal-title="Outside Network"
+          modal-message="If you want to connect to members outside of your network connection you will have to use the outside local network option. The server will use a stun server to find routing to each other"
+          modal-btn-text="I understand"
+          title="Outside Network"
+          description="Share Files with people outside of your network"
+        />
       </div>
     </div>
   </div>
