@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import router from '@/router'
 
 const user = useUserStore()
-const username = ref('')
+const username = ref(user.getUsername())
 
 function cleanNickname(name: string) {
   name = name.trimStart()
@@ -38,16 +38,16 @@ function selectNickname() {
         <h2 class="text-2xl font-black text-white capitalize mb-5 hind">
           Nickname<span v-if="username" class="hind font-black normal-case">: {{ username }}</span>
         </h2>
-        <input
-          type="text"
-          :value="username"
-          @input="cleanNickname(($event.target as HTMLInputElement).value)"
-          placeholder="Your cool username"
-          class="input input-primary w-full mb-5 font-regular hind"
-        />
-        <button :disabled="!username" @click="selectNickname" class="btn btn-primary w-full">
-          Select Nickname
-        </button>
+        <form @submit="selectNickname">
+          <input
+            type="text"
+            :value="username"
+            @input="cleanNickname(($event.target as HTMLInputElement).value)"
+            placeholder="Your cool username"
+            class="input input-primary w-full mb-5 font-regular hind"
+          />
+          <button :disabled="!username" class="btn btn-primary w-full">Select Nickname</button>
+        </form>
       </div>
     </div>
   </div>
