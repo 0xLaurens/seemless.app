@@ -6,6 +6,7 @@ import BackIcon from '@/components/icons/BackIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { onDeactivated, ref } from 'vue'
 import { RequestTypes } from '@/models/request'
+import WsConnection from '@/components/WsConnection.vue'
 
 const user = useUserStore()
 const route = useRoute()
@@ -89,6 +90,10 @@ onDeactivated(() => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div>
+          <ws-connection :ws="ws" />
         </div>
 
         <div class="relative mb-24">
