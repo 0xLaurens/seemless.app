@@ -3,10 +3,53 @@ import { useRoute } from 'vue-router'
 import QrIcon from '@/components/icons/QrIcon.vue'
 import PlaneIcon from '@/components/icons/PlaneIcon.vue'
 import BackIcon from '@/components/icons/BackIcon.vue'
+import { useUserStore } from '@/stores/user'
+import { onDeactivated, ref } from 'vue'
+import { RequestTypes } from '@/models/request'
 
+const user = useUserStore()
 const route = useRoute()
 const id = route.params.id
-let users = ['Laurens', 'Tim', 'Wessel', 'Luke', 'Oliver', 'Owen', 'Jonah', 'Noah']
+const ws = new WebSocket('ws://192.168.14.249:3000/ws')
+// const ws = new WebSocket('ws://127.0.0.1:3000/ws')
+
+let users = ref([])
+
+ws.onmessage = (event) => {
+  let data = JSON.parse(event.data)
+  switch (data.type) {
+    case RequestTypes.Peers:
+      users.value = data.users
+      break
+    case RequestTypes.PeerJoined:
+      users.value.push(data.username)
+      break
+    case RequestTypes.PeerLeft:
+      users.value = users.value.filter((u) => u != data.username)
+      break
+    case RequestTypes.UsernamePrompt:
+    case RequestTypes.Username:
+    case RequestTypes.DuplicateUsername:
+      console.log(data.message)
+      break
+    default:
+      console.log(`Unknown type ${data.type}`)
+  }
+}
+ws.onopen = () => {
+  let payload = {
+    type: 'Username',
+    body: {
+      username: user.getUsername()
+    }
+  }
+
+  ws.send(JSON.stringify(payload))
+}
+
+onDeactivated(() => {
+  ws.close()
+})
 </script>
 
 <template>
