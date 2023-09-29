@@ -19,7 +19,10 @@ ws.onmessage = (event) => {
   let data = JSON.parse(event.data)
   switch (data.type) {
     case RequestTypes.Peers:
-      users.value = data.users
+      console.log(data.users)
+      for (let user of data.users) {
+        users.value.push(user.username)
+      }
       break
     case RequestTypes.PeerJoined:
       users.value.push(data.username)
