@@ -10,7 +10,7 @@ type UserOption func(*User)
 type User struct {
 	Username   string `json:"username"`
 	Device     string `json:"device"`
-	Connection Conn   `json:"connection,omitempty"`
+	Connection Conn   `json:"-"`
 }
 
 // WithConnection helper function for create user to pass a connection

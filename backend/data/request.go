@@ -15,6 +15,7 @@ var RequestTypes = struct {
 	PeerJoined      RequestType
 	PeerLeft        RequestType
 	PeerUpdated     RequestType
+	Peers           RequestType
 	Username        RequestType
 }{
 	Offer:           "Offer",
@@ -23,6 +24,7 @@ var RequestTypes = struct {
 	PeerJoined:      "PeerJoined",
 	PeerLeft:        "PeerLeft",
 	PeerUpdated:     "PeerUpdated",
+	Peers:           "Peers",
 	Username:        "Username",
 }
 
