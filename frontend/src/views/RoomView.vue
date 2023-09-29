@@ -4,7 +4,7 @@ import QrIcon from '@/components/icons/QrIcon.vue'
 import PlaneIcon from '@/components/icons/PlaneIcon.vue'
 import BackIcon from '@/components/icons/BackIcon.vue'
 import { useUserStore } from '@/stores/user'
-import { onDeactivated, ref } from 'vue'
+import { onDeactivated, onUnmounted, ref } from 'vue'
 import { RequestTypes } from '@/models/request'
 import WsConnection from '@/components/WsConnection.vue'
 
@@ -51,7 +51,11 @@ ws.onopen = () => {
   ws.send(JSON.stringify(payload))
 }
 
-onDeactivated(() => {
+ws.onerror = (e) => {
+  console.log(e)
+}
+
+onUnmounted(() => {
   ws.close()
 })
 </script>
