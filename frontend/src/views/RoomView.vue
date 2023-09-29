@@ -61,9 +61,9 @@ onDeactivated(() => {
       <div class="w-full px-4 sm:px-6 sm:text-center lg:px-0">
         <div class="z-0 relative lg:pt-12">
           <div class="flex justify-between align-middle">
-            <a href="../network" class="btn btn-md md:btn-lg btn-ghost font-black">
+            <router-link to="../network" class="btn btn-md md:btn-lg btn-ghost font-black">
               <back-icon />
-            </a>
+            </router-link>
             <h1 class="text-4xl font-black text-center text-white capitalize mb-24">
               Room: {{ id }}
             </h1>

@@ -14,7 +14,7 @@ let imageSrc =
       <p class="max-w-xl text-lg md:text-xl font-medium mb-12 hind">
         Send files of any size directly to another device without ever storing it online.
       </p>
-      <a href="/nick" class="btn btn-primary btn-md btn-wide"> Share Now </a>
+      <router-link to="/nick" class="btn btn-primary btn-md btn-wide"> Share Now</router-link>
     </div>
     <div class="right col-span-5 space-y-3 mx-auto">
       <img :src="imageSrc" class="rounded-lg shadow-2xl" alt="tin can telephone" />
