@@ -5,8 +5,8 @@
         <h1 class="text-9xl font-black text-white">404</h1>
         <h2 class="text-4xl font-bold">Page Not Found</h2>
         <p class="py-6 hind font-normal text-xl">
-          The page that you were looking for does not exist. It might have been removed or has had
-          its name removed
+          The page that you were looking for does not exist. The page might have been removed or
+          it's name was changed.
         </p>
         <a href="/" class="btn btn-primary">Go To Homepage</a>
       </div>
