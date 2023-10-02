@@ -8,68 +8,43 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { RequestTypes } from '@/models/request'
 import WsConnection from '@/components/WsConnection.vue'
 import type { Message } from '@/models/message'
-// import { createOffer, createOfferAnswer, handleAnswer } from '@/helpers/rtc'
-import type { SessionDescriptionMessage } from '@/models/sdm'
+import { useRtcStore } from '@/stores/rtc'
 
 const user = useUserStore()
 const route = useRoute()
 const id = route.params.id
 
-const rtc = new RTCPeerConnection()
+const rtc = useRtcStore()
+let pc: RTCPeerConnection
 // const ws = new WebSocket('ws://192.168.14.249:3000/ws')
 const ws = new WebSocket('ws://127.0.0.1:3000/ws')
-let localFragment: string | null
 
 let users = ref([])
-const dataChannel = rtc.createDataChannel('test')
-
-rtc.ondatachannel = (dc) => {
-  dc.channel.onmessage = (event) => {
-    console.log(event.data)
-  }
-}
-
-dataChannel.onerror = (error) => {
-  console.log('Data Channel Error:', error)
-}
-
-dataChannel.onmessage = (event) => {
-  console.log(event)
-  console.log('Got Data Channel Message:', event.data)
-}
-
-dataChannel.onopen = () => {
-  console.log('DATA CHANNEL OPEN')
-  dataChannel.send('Hello World!')
-}
-
-dataChannel.onclose = () => {
-  console.log('The Data Channel is Closed')
-}
 
 onMounted(() => {
-  rtc.onicecandidate = (ev) => {
-    if (ev.candidate) {
-      localFragment = ev.candidate.usernameFragment
-      sendMessage(RequestTypes.NewIceCandidate, undefined, undefined, JSON.stringify(ev.candidate))
-    }
+  pc = rtc.getPeerConnection()
+  pc.ondatachannel = (dce) => rtc.setDatachannel(dce.channel)
+  pc.onicecandidate = (ev) => {
+    if (!ev.candidate) return
+    rtc.setLocalFragment(ev.candidate.usernameFragment)
+    sendMessage(RequestTypes.NewIceCandidate, undefined, undefined, JSON.stringify(ev.candidate))
   }
-  rtc.onicecandidateerror = (ev) => console.log(ev)
 })
 
 ws.onmessage = async (event) => {
   let data = JSON.parse(event.data)
   switch (data.type) {
     case RequestTypes.Offer: {
-      await createOfferAnswer(data)
+      let answer = await rtc.createOfferAnswer(data)
+      sendMessage('Answer', data.from, answer.sdp)
       break
     }
     case RequestTypes.NewIceCandidate: {
-      await handleIceCandidate(JSON.parse(data.candidate))
+      await rtc.handleIceCandidate(JSON.parse(data.candidate))
       break
     }
     case RequestTypes.Answer: {
-      await handleAnswer(data)
+      await rtc.handleAnswer(data)
       break
     }
     case RequestTypes.Peers:
@@ -109,8 +84,7 @@ function sendMessage(type: string, target?: string, sdp?: string, candidate?: st
 }
 
 async function sendOffer(username: string) {
-  let offer = await createOffer()
-  console.log(offer)
+  let offer = await rtc.createOffer()
   sendMessage('Offer', username, offer.sdp)
 }
 
@@ -132,47 +106,6 @@ ws.onerror = (e) => {
 onUnmounted(() => {
   ws.close()
 })
-
-async function createOffer(): Promise<RTCSessionDescriptionInit> {
-  console.log('CREATE OFFER')
-  const offer = await rtc.createOffer()
-  await rtc.setLocalDescription(offer)
-  return offer
-}
-
-async function createOfferAnswer(offer: SessionDescriptionMessage) {
-  console.log('HANDLE OFFER ANSWER')
-  offer.type = 'offer'
-  await rtc.setRemoteDescription(offer).catch(console.error)
-  const answer = await rtc.createAnswer()
-  await rtc.setLocalDescription(answer)
-  sendMessage('Answer', offer.from, answer.sdp)
-}
-
-async function handleAnswer(answer: SessionDescriptionMessage) {
-  console.log('HANDLE ANSWER')
-  answer.type = 'answer'
-  if (rtc.signalingState === 'stable') {
-    return
-  }
-
-  await rtc.setRemoteDescription(answer).catch(console.error)
-}
-
-async function handleIceCandidate(candidate: RTCIceCandidateInit | null) {
-  if (candidate == null || candidate.usernameFragment === localFragment) {
-    return
-  }
-  await rtc.addIceCandidate(candidate)
-}
-
-// async function handleIceCandidate(
-//   rtc: RTCPeerConnection,
-//   data: { type: string; candidate: string }
-// ) {
-//   const candidate = JSON.parse(data.candidate)
-//   await rtc.addIceCandidate(candidate)
-// }
 </script>
 
 <template>

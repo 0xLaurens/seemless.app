@@ -1,27 +1,44 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import type { SessionDescriptionMessage } from '@/models/sdm'
 
 export const useRtcStore = defineStore('rtc', () => {
-  let rtc: RTCPeerConnection
-  const wsLocal = ref()
-  const localFragment = ref()
+  const rtc = new RTCPeerConnection()
+  let dc = createDatachannel('test')
+  let localFragment: string | null
 
-  function setup(ws: WebSocket) {
-    wsLocal.value = ws
-    rtc = new RTCPeerConnection()
-  }
+  rtc.ondatachannel = (dc) => setDatachannel(dc.channel)
 
   function getPeerConnection() {
     return rtc
   }
 
-  function getLocalFragment() {
-    return localFragment.value
+  function createDatachannel(name: string): RTCDataChannel {
+    const dataChannel = rtc.createDataChannel(name)
+    addDcListeners(dataChannel)
+    return dataChannel
+  }
+
+  function addDcListeners(dc: RTCDataChannel) {
+    dc.onopen = () => dc.send('Great Success!')
+    dc.onmessage = (ev) => console.log(ev.data)
+    dc.onclose = (ev) => console.log(ev)
+  }
+
+  function setDatachannel(datachannel: RTCDataChannel) {
+    dc = datachannel
+    addDcListeners(dc)
+  }
+
+  function getDatachannel(): RTCDataChannel {
+    return dc
   }
 
   function setLocalFragment(fragment: string | null) {
-    localFragment.value = fragment
+    localFragment = fragment
+  }
+
+  function getLocalFragment(): string | null {
+    return localFragment
   }
 
   async function createOffer(): Promise<RTCSessionDescriptionInit> {
@@ -31,44 +48,43 @@ export const useRtcStore = defineStore('rtc', () => {
     return offer
   }
 
-  async function createOfferAnswer(
-    offer: SessionDescriptionMessage
-  ): Promise<RTCSessionDescriptionInit> {
+  async function createOfferAnswer(offer: SessionDescriptionMessage) {
     console.log('HANDLE OFFER ANSWER')
-    await rtc.setRemoteDescription(offer)
+    offer.type = 'offer'
+    await rtc.setRemoteDescription(offer).catch(console.error)
     const answer = await rtc.createAnswer()
     await rtc.setLocalDescription(answer)
     return answer
+    // sendMessage('Answer', offer.from, answer.sdp)
   }
 
   async function handleAnswer(answer: SessionDescriptionMessage) {
-    console.log('HANDLE ANSWER', rtc.connectionState)
+    console.log('HANDLE ANSWER')
     answer.type = 'answer'
     if (rtc.signalingState === 'stable') {
       return
     }
 
-    await rtc.setRemoteDescription(answer)
+    await rtc.setRemoteDescription(answer).catch(console.error)
   }
 
-  async function handleIceCandidate(data: { type: string; candidate: string }) {
-    const candidate = JSON.parse(data.candidate)
+  async function handleIceCandidate(candidate: RTCIceCandidateInit | null) {
+    console.log('HANDLE ICE CANDIDATE', getLocalFragment())
+    if (getLocalFragment() === null) return
+
+    if (candidate == null || candidate.usernameFragment === getLocalFragment()) {
+      return
+    }
     await rtc.addIceCandidate(candidate)
-  }
-
-  function closePeerConnection() {
-    rtc.close()
   }
 
   return {
     getPeerConnection,
-    setup,
-    closePeerConnection,
+    setDatachannel,
+    setLocalFragment,
     createOffer,
     createOfferAnswer,
-    handleIceCandidate,
     handleAnswer,
-    setLocalFragment,
-    getLocalFragment
+    handleIceCandidate
   }
 })
