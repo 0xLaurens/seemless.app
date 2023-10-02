@@ -7,39 +7,69 @@ import { useUserStore } from '@/stores/user'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { RequestTypes } from '@/models/request'
 import WsConnection from '@/components/WsConnection.vue'
-import { useRtcStore } from '@/stores/rtc'
 import type { Message } from '@/models/message'
+// import { createOffer, createOfferAnswer, handleAnswer } from '@/helpers/rtc'
+import type { SessionDescriptionMessage } from '@/models/sdm'
 
 const user = useUserStore()
 const route = useRoute()
 const id = route.params.id
-const rtc = useRtcStore()
-let rtcConn: RTCPeerConnection
-const ws = new WebSocket('ws://192.168.14.249:3000/ws')
-// const ws = new WebSocket('ws://127.0.0.1:3000/ws')
+
+const rtc = new RTCPeerConnection()
+// const ws = new WebSocket('ws://192.168.14.249:3000/ws')
+const ws = new WebSocket('ws://127.0.0.1:3000/ws')
+let localFragment: string | null
 
 let users = ref([])
+const dataChannel = rtc.createDataChannel('test')
+
+rtc.ondatachannel = (dc) => {
+  dc.channel.onmessage = (event) => {
+    console.log(event.data)
+  }
+}
+
+dataChannel.onerror = (error) => {
+  console.log('Data Channel Error:', error)
+}
+
+dataChannel.onmessage = (event) => {
+  console.log(event)
+  console.log('Got Data Channel Message:', event.data)
+}
+
+dataChannel.onopen = () => {
+  console.log('DATA CHANNEL OPEN')
+  dataChannel.send('Hello World!')
+}
+
+dataChannel.onclose = () => {
+  console.log('The Data Channel is Closed')
+}
 
 onMounted(() => {
-  rtc.setup(ws)
-  rtcConn = rtc.getPeerConnection()
-  console.log(rtcConn)
-  rtcConn.onicecandidate = (ev) => {
-    console.log(ev)
+  rtc.onicecandidate = (ev) => {
+    if (ev.candidate) {
+      localFragment = ev.candidate.usernameFragment
+      sendMessage(RequestTypes.NewIceCandidate, undefined, undefined, JSON.stringify(ev.candidate))
+    }
   }
+  rtc.onicecandidateerror = (ev) => console.log(ev)
 })
 
 ws.onmessage = async (event) => {
   let data = JSON.parse(event.data)
   switch (data.type) {
     case RequestTypes.Offer: {
-      data.type = RequestTypes.Offer.toLowerCase()
-      const answer = await rtc.createOfferAnswer(data)
-      sendMessage(RequestTypes.Answer, data.from, answer.sdp)
+      await createOfferAnswer(data)
+      break
+    }
+    case RequestTypes.NewIceCandidate: {
+      await handleIceCandidate(JSON.parse(data.candidate))
       break
     }
     case RequestTypes.Answer: {
-      await rtc.handleAnswer(data)
+      await handleAnswer(data)
       break
     }
     case RequestTypes.Peers:
@@ -64,12 +94,14 @@ ws.onmessage = async (event) => {
 }
 
 function sendMessage(type: string, target?: string, sdp?: string, candidate?: string) {
+  console.log('SENT:', type)
   let message: Message = {
-    type,
+    type: type,
     target: target,
-    sdp,
-    candidate
+    sdp: sdp,
+    candidate: candidate
   }
+
   if (message.sdp) {
     message.from = user.getUsername()
   }
@@ -77,14 +109,10 @@ function sendMessage(type: string, target?: string, sdp?: string, candidate?: st
 }
 
 async function sendOffer(username: string) {
-  let offer = await rtc.createOffer()
+  let offer = await createOffer()
+  console.log(offer)
   sendMessage('Offer', username, offer.sdp)
 }
-
-rtc.$subscribe((mutation, state) => {
-  console.log(mutation)
-  console.log(state)
-})
 
 ws.onopen = () => {
   let payload = {
@@ -104,6 +132,47 @@ ws.onerror = (e) => {
 onUnmounted(() => {
   ws.close()
 })
+
+async function createOffer(): Promise<RTCSessionDescriptionInit> {
+  console.log('CREATE OFFER')
+  const offer = await rtc.createOffer()
+  await rtc.setLocalDescription(offer)
+  return offer
+}
+
+async function createOfferAnswer(offer: SessionDescriptionMessage) {
+  console.log('HANDLE OFFER ANSWER')
+  offer.type = 'offer'
+  await rtc.setRemoteDescription(offer).catch(console.error)
+  const answer = await rtc.createAnswer()
+  await rtc.setLocalDescription(answer)
+  sendMessage('Answer', offer.from, answer.sdp)
+}
+
+async function handleAnswer(answer: SessionDescriptionMessage) {
+  console.log('HANDLE ANSWER')
+  answer.type = 'answer'
+  if (rtc.signalingState === 'stable') {
+    return
+  }
+
+  await rtc.setRemoteDescription(answer).catch(console.error)
+}
+
+async function handleIceCandidate(candidate: RTCIceCandidateInit | null) {
+  if (candidate == null || candidate.usernameFragment === localFragment) {
+    return
+  }
+  await rtc.addIceCandidate(candidate)
+}
+
+// async function handleIceCandidate(
+//   rtc: RTCPeerConnection,
+//   data: { type: string; candidate: string }
+// ) {
+//   const candidate = JSON.parse(data.candidate)
+//   await rtc.addIceCandidate(candidate)
+// }
 </script>
 
 <template>
