@@ -4,23 +4,45 @@ import QrIcon from '@/components/icons/QrIcon.vue'
 import PlaneIcon from '@/components/icons/PlaneIcon.vue'
 import BackIcon from '@/components/icons/BackIcon.vue'
 import { useUserStore } from '@/stores/user'
-import { onDeactivated, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { RequestTypes } from '@/models/request'
 import WsConnection from '@/components/WsConnection.vue'
+import { useRtcStore } from '@/stores/rtc'
+import type { Message } from '@/models/message'
 
 const user = useUserStore()
 const route = useRoute()
 const id = route.params.id
+const rtc = useRtcStore()
+let rtcConn: RTCPeerConnection
 const ws = new WebSocket('ws://192.168.14.249:3000/ws')
 // const ws = new WebSocket('ws://127.0.0.1:3000/ws')
 
 let users = ref([])
 
-ws.onmessage = (event) => {
+onMounted(() => {
+  rtc.setup(ws)
+  rtcConn = rtc.getPeerConnection()
+  console.log(rtcConn)
+  rtcConn.onicecandidate = (ev) => {
+    console.log(ev)
+  }
+})
+
+ws.onmessage = async (event) => {
   let data = JSON.parse(event.data)
   switch (data.type) {
+    case RequestTypes.Offer: {
+      data.type = RequestTypes.Offer.toLowerCase()
+      const answer = await rtc.createOfferAnswer(data)
+      sendMessage(RequestTypes.Answer, data.from, answer.sdp)
+      break
+    }
+    case RequestTypes.Answer: {
+      await rtc.handleAnswer(data)
+      break
+    }
     case RequestTypes.Peers:
-      console.log(data.users)
       for (let user of data.users) {
         users.value.push(user.username)
       }
@@ -40,6 +62,30 @@ ws.onmessage = (event) => {
       console.log(`Unknown type ${data.type}`)
   }
 }
+
+function sendMessage(type: string, target?: string, sdp?: string, candidate?: string) {
+  let message: Message = {
+    type,
+    target: target,
+    sdp,
+    candidate
+  }
+  if (message.sdp) {
+    message.from = user.getUsername()
+  }
+  ws.send(JSON.stringify(message))
+}
+
+async function sendOffer(username: string) {
+  let offer = await rtc.createOffer()
+  sendMessage('Offer', username, offer.sdp)
+}
+
+rtc.$subscribe((mutation, state) => {
+  console.log(mutation)
+  console.log(state)
+})
+
 ws.onopen = () => {
   let payload = {
     type: 'Username',
@@ -80,7 +126,7 @@ onUnmounted(() => {
 
         <div class="users-box flow-root mb-24">
           <div class="flex flex-wrap justify-center align-middle">
-            <div :key="user" v-for="user in users">
+            <div :key="user" v-for="user in users" @click="sendOffer(user)">
               <div class="user justify-center text-center mr-6">
                 <div class="avatar placeholder mb-2">
                   <div
