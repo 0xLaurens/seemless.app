@@ -9,6 +9,7 @@ import { RequestTypes } from '@/models/request'
 import WsConnection from '@/components/WsConnection.vue'
 import type { Message } from '@/models/message'
 import { useRtcStore } from '@/stores/rtc'
+import FileInput from '@/components/FileInput.vue'
 
 const user = useUserStore()
 const route = useRoute()
@@ -16,8 +17,9 @@ const id = route.params.id
 
 const rtc = useRtcStore()
 let pc: RTCPeerConnection
-// const ws = new WebSocket('ws://192.168.14.249:3000/ws')
-const ws = new WebSocket('ws://127.0.0.1:3000/ws')
+// const ws = new WebSocket('ws://192.168.14.249:3000/ws') //ihomer
+const ws = new WebSocket('ws://192.168.178.36:3000/ws') //thuis
+// const ws = new WebSocket('ws://127.0.0.1:3000/ws')
 
 let users = ref([])
 
@@ -146,6 +148,12 @@ onUnmounted(() => {
 
         <div>
           <ws-connection :ws="ws" />
+        </div>
+
+        <div class="relative mb-24">
+          <div class="flex justify-center flex-wrap space-x-6 pt-5">
+            <file-input />
+          </div>
         </div>
 
         <div class="relative mb-24">

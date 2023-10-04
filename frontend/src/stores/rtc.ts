@@ -1,9 +1,15 @@
 import { defineStore } from 'pinia'
 import type { SessionDescriptionMessage } from '@/models/sdm'
+import { ref } from 'vue'
+import type { FileMessage } from '@/models/file'
+import { FileStatus } from '@/models/file'
 
 export const useRtcStore = defineStore('rtc', () => {
+  const CHUNK_SIZE = 63 * 1024
+  const blobURL = ref('')
+  const test_buf: any[] = []
   const rtc = new RTCPeerConnection()
-  let dc = createDatachannel('test')
+  let dc = createDatachannel('files')
   let localFragment: string | null
 
   rtc.ondatachannel = (dc) => setDatachannel(dc.channel)
@@ -18,10 +24,29 @@ export const useRtcStore = defineStore('rtc', () => {
     return dataChannel
   }
 
-  function addDcListeners(dc: RTCDataChannel) {
+  async function addDcListeners(dc: RTCDataChannel) {
     dc.onopen = () => dc.send('Great Success!')
-    dc.onmessage = (ev) => console.log(ev.data)
+    dc.onmessage = (ev) => {
+      if (typeof ev.data === 'object') {
+        recvFile(undefined, ev.data)
+      }
+
+      if (isJSON(ev.data)) {
+        const file = JSON.parse(ev.data)
+        recvFile(file, undefined)
+      }
+    }
     dc.onclose = (ev) => console.log(ev)
+  }
+
+  function isJSON(str: string) {
+    try {
+      JSON.parse(str)
+    } catch (e) {
+      return false
+    }
+
+    return true
   }
 
   function setDatachannel(datachannel: RTCDataChannel) {
@@ -31,6 +56,47 @@ export const useRtcStore = defineStore('rtc', () => {
 
   function getDatachannel(): RTCDataChannel {
     return dc
+  }
+
+  async function sendFiles(files: File[]) {
+    if (dc.readyState !== 'open') {
+      console.log("COULDN'T SEND FILES DATACHANNEL IS CLOSED")
+      return
+    }
+
+    for (const file of files) {
+      await sendFile(file)
+    }
+  }
+
+  async function recvFile(file: FileMessage | undefined, chunk: string | undefined) {
+    if (!chunk && !file) {
+      return
+    }
+
+    if (file?.status === FileStatus.Complete) {
+      console.log('TRANSFER COMPLETE')
+      const blob = new Blob(test_buf, { type: file.name })
+      const blobFile = new File([blob], file.name)
+      blobURL.value = URL.createObjectURL(blobFile)
+      return
+    }
+
+    if (chunk) {
+      test_buf.push(chunk)
+    }
+  }
+
+  async function sendFile(file: File) {
+    const pl: FileMessage = { mime: file.type, name: file.name, status: FileStatus.Busy }
+    let buf = await file.arrayBuffer()
+    while (buf.byteLength) {
+      const chunk = buf.slice(0, CHUNK_SIZE)
+      buf = buf.slice(CHUNK_SIZE, buf.byteLength)
+      dc.send(chunk)
+    }
+    pl.status = FileStatus.Complete
+    dc.send(JSON.stringify(pl))
   }
 
   function setLocalFragment(fragment: string | null) {
@@ -79,12 +145,14 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   return {
+    blobURL,
     getPeerConnection,
     setDatachannel,
     setLocalFragment,
     createOffer,
     createOfferAnswer,
     handleAnswer,
-    handleIceCandidate
+    handleIceCandidate,
+    sendFiles
   }
 })
