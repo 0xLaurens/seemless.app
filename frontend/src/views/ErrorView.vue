@@ -8,7 +8,7 @@
           The page that you were looking for does not exist. The page might have been removed or
           it's name was changed.
         </p>
-        <a href="/" class="btn btn-primary">Go To Homepage</a>
+        <router-link to="/" class="btn btn-primary">Go To Homepage</router-link>
       </div>
     </div>
   </div>
