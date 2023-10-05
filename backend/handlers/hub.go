@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"laurensdrop/data"
 	"laurensdrop/store"
-	"laurensdrop/utils"
 	"log"
 )
 
@@ -45,7 +44,6 @@ func (h *Hub) Run() {
 		select {
 		case msg := <-h.channels.broadcast:
 			log.Println("DBG -->> broadcast")
-			log.Printf("DBG -->> msg: %s\n", string(msg))
 			h.broadcastMessage(msg)
 		case user := <-h.channels.register:
 			log.Println("DBG -->> register", user)
@@ -99,21 +97,6 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) broadcastMessage(msg []byte) {
-	req := data.Request{}
-	err := utils.MapJsonToStruct(msg, &req)
-	if err != nil {
-		return
-	}
-
-	if len(req.Target) > 0 {
-		u, _ := h.users.GetUserByName(req.Target)
-		err := u.Connection.Conn.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
-			return
-		}
-		return
-	}
-
 	users, err := h.users.GetAllUsers()
 	if err != nil {
 		return
