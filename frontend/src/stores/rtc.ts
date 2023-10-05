@@ -5,7 +5,7 @@ import type { FileMessage } from '@/models/file'
 import { FileStatus } from '@/models/file'
 
 export const useRtcStore = defineStore('rtc', () => {
-  const CHUNK_SIZE = 63 * 1024
+  const CHUNK_SIZE = 65536 //64 KiB
   const blobURL = ref('')
   const test_buf: any[] = []
   const rtc = new RTCPeerConnection()
