@@ -10,6 +10,7 @@ import WsConnection from '@/components/WsConnection.vue'
 import type { Message } from '@/models/message'
 import { useRtcStore } from '@/stores/rtc'
 import FileInput from '@/components/FileInput.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const user = useUserStore()
 const route = useRoute()
@@ -17,8 +18,8 @@ const id = route.params.id
 
 const rtc = useRtcStore()
 let pc: RTCPeerConnection
-// const ws = new WebSocket('ws://192.168.14.249:3000/ws') //ihomer
-const ws = new WebSocket('ws://192.168.178.36:3000/ws') //thuis
+const ws = new WebSocket('ws://192.168.14.249:3000/ws') //ihomer
+// const ws = new WebSocket('ws://192.168.178.36:3000/ws') //thuis
 // const ws = new WebSocket('ws://127.0.0.1:3000/ws')
 
 let users = ref([])
@@ -86,6 +87,11 @@ function sendMessage(type: string, target?: string, sdp?: string, candidate?: st
 }
 
 async function sendOffer(username: string) {
+  if (username === user.getUsername()) {
+    console.log(username)
+    return
+  }
+
   let offer = await rtc.createOffer()
   sendMessage('Offer', username, offer.sdp)
 }
@@ -130,18 +136,12 @@ onUnmounted(() => {
 
         <div class="users-box flow-root mb-24">
           <div class="flex flex-wrap justify-center align-middle">
-            <div :key="user" v-for="user in users" @click="sendOffer(user)">
-              <div class="user justify-center text-center mr-6">
-                <div class="avatar placeholder mb-2">
-                  <div
-                    class="bg-neutral-focus text-neutral-content rounded-full w-24 hover:ring-4 ring-accent ring-offset-4 ring-offset-base-100"
-                  >
-                    <span class="text-3xl">{{ user[0] }}</span>
-                  </div>
-                </div>
-                <h2>{{ user }}</h2>
-                <span class="hind text-accent text-lg font-medium">Android</span>
-              </div>
+            <div
+              :key="u"
+              v-for="u in users"
+              @click="u !== user.getUsername() ? sendOffer(u) : null"
+            >
+              <user-avatar :user="u" />
             </div>
           </div>
         </div>
