@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
+import { useConnectedStore } from '@/stores/connected'
 
+const connStore = useConnectedStore()
 const props = defineProps({ user: String })
-const connected: boolean = false
+
 const userStore = useUserStore()
 const isUser = userStore.getUsername() === props.user
 </script>
 
 <template>
-  <div class="user justify-center text-center mr-6">
+  <div
+    class="user justify-center text-center mr-6 group"
+    :class="{ 'cursor-pointer': !isUser, 'cursor-default': isUser }"
+  >
     <div class="avatar placeholder mb-2">
       <div
         :class="{
-          'hover:ring-8 ring-accent ring-offset-4 ring-offset-base-100 cursor-pointer': !isUser,
-          'ring-8 ring-accent': connected
+          'group-hover:ring-4 ring-accent ring-offset-4 ring-offset-base-100': !isUser,
+          'ring-4 ring-accent': connStore.getUserConnectionStatus(props.user)
         }"
         class="bg-neutral-focus text-neutral-content rounded-full w-24"
       >
