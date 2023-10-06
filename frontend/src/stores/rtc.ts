@@ -3,12 +3,17 @@ import type { SessionDescriptionMessage } from '@/models/sdm'
 import { ref } from 'vue'
 import type { FileMessage } from '@/models/file'
 import { FileStatus } from '@/models/file'
+import { useUserStore } from '@/stores/user'
+import { DcStatus } from '@/models/datachannel'
+import { useConnectedStore } from '@/stores/connected'
 
 export const useRtcStore = defineStore('rtc', () => {
   const CHUNK_SIZE = 65536 //64 KiB
   const blobURL = ref('')
   const test_buf: any[] = []
   const rtc = new RTCPeerConnection()
+  const user = useUserStore()
+  const conn = useConnectedStore()
   let dc = createDatachannel('files')
   let localFragment: string | null
 
@@ -18,6 +23,14 @@ export const useRtcStore = defineStore('rtc', () => {
     return rtc
   }
 
+  function close() {
+    if (dc.readyState === 'open') {
+      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientClose }))
+    }
+
+    rtc.close()
+  }
+
   function createDatachannel(name: string): RTCDataChannel {
     const dataChannel = rtc.createDataChannel(name)
     addDcListeners(dataChannel)
@@ -25,18 +38,29 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function addDcListeners(dc: RTCDataChannel) {
-    dc.onopen = () => dc.send('Great Success!')
+    dc.onopen = () =>
+      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientHello }))
     dc.onmessage = (ev) => {
       if (typeof ev.data === 'object') {
         recvFile(undefined, ev.data)
+        return
       }
 
-      if (isJSON(ev.data)) {
-        const file = JSON.parse(ev.data)
-        recvFile(file, undefined)
+      if (!isJSON(ev.data)) return
+
+      const fileOrDcMessage = JSON.parse(ev.data)
+
+      if (fileOrDcMessage.username && fileOrDcMessage.status) {
+        const connected = fileOrDcMessage.status === DcStatus.ClientHello
+        conn.createUserConnection(fileOrDcMessage.username, connected)
+        return
       }
+
+      recvFile(fileOrDcMessage, undefined)
     }
-    dc.onclose = (ev) => console.log(ev)
+    dc.onclose = (ev) => {
+      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientClose }))
+    }
   }
 
   function isJSON(str: string) {
@@ -146,6 +170,7 @@ export const useRtcStore = defineStore('rtc', () => {
 
   return {
     blobURL,
+    close,
     getPeerConnection,
     setDatachannel,
     setLocalFragment,

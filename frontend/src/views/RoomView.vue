@@ -11,8 +11,10 @@ import type { Message } from '@/models/message'
 import { useRtcStore } from '@/stores/rtc'
 import FileInput from '@/components/FileInput.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useConnectedStore } from '@/stores/connected'
 
 const user = useUserStore()
+const conn = useConnectedStore()
 const route = useRoute()
 const id = route.params.id
 
@@ -60,6 +62,7 @@ ws.onmessage = async (event) => {
       break
     case RequestTypes.PeerLeft:
       users.value = users.value.filter((u) => u != data.username)
+      conn.removeUser(data.username)
       break
     case RequestTypes.UsernamePrompt:
     case RequestTypes.Username:
@@ -88,7 +91,6 @@ function sendMessage(type: string, target?: string, sdp?: string, candidate?: st
 
 async function sendOffer(username: string) {
   if (username === user.getUsername()) {
-    console.log(username)
     return
   }
 
@@ -113,6 +115,10 @@ ws.onerror = (e) => {
 
 onUnmounted(() => {
   ws.close()
+  for (const u of conn.getConnectedUsers()) {
+    conn.removeUser(u)
+  }
+  rtc.close()
 })
 </script>
 
