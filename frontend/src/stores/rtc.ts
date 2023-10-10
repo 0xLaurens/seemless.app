@@ -58,7 +58,7 @@ export const useRtcStore = defineStore('rtc', () => {
 
       recvFile(fileOrDcMessage, undefined)
     }
-    dc.onclose = (ev) => {
+    dc.onclose = () => {
       dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientClose }))
     }
   }
@@ -141,6 +141,7 @@ export const useRtcStore = defineStore('rtc', () => {
   async function createOfferAnswer(offer: SessionDescriptionMessage) {
     console.log('HANDLE OFFER ANSWER')
     offer.type = 'offer'
+    conn.createUserConnection(offer.from, true)
     await rtc.setRemoteDescription(offer).catch(console.error)
     const answer = await rtc.createAnswer()
     await rtc.setLocalDescription(answer)
@@ -154,7 +155,7 @@ export const useRtcStore = defineStore('rtc', () => {
     if (rtc.signalingState === 'stable') {
       return
     }
-
+    conn.createUserConnection(answer.from, true)
     await rtc.setRemoteDescription(answer).catch(console.error)
   }
 

@@ -36,7 +36,11 @@ onMounted(() => {
   pc.onicecandidate = (ev) => {
     if (!ev.candidate) return
     rtc.setLocalFragment(ev.candidate.usernameFragment)
-    sendMessage(RequestTypes.NewIceCandidate, undefined, undefined, JSON.stringify(ev.candidate))
+    console.log(conn.getConnectedUsers())
+    for (const user of conn.getConnectedUsers()) {
+      console.log('ICE USER')
+      sendMessage(RequestTypes.NewIceCandidate, user, undefined, JSON.stringify(ev.candidate))
+    }
   }
 })
 
@@ -61,6 +65,7 @@ async function sendOffer(username: string) {
   }
 
   let offer = await rtc.createOffer()
+  conn.createUserConnection(username, true)
   sendMessage('Offer', username, offer.sdp)
 }
 

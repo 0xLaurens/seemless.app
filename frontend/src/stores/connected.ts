@@ -18,7 +18,7 @@ export const useConnectedStore = defineStore('connected', () => {
   }
 
   function getConnectedUsers() {
-    return connected.value.keys()
+    return Array.from(connected.value.keys())
   }
 
   return {
