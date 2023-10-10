@@ -10,12 +10,13 @@ export const useRetryStore = defineStore('retry', () => {
   const timer: Ref<number | undefined> = ref()
 
   function start(fn: () => void) {
+    if (timer.value !== undefined) clearTimeout(timer.value)
+
     let backOffDuration = MAX_TIMEOUT
     if (attempts.value < 3) {
       backOffDuration = Math.pow(2, attempts.value) * DELAY
     }
     console.log('BACKOFF', backOffDuration, 'MS')
-
     timer.value = setTimeout(() => {
       fn()
       attempts.value++
@@ -26,7 +27,6 @@ export const useRetryStore = defineStore('retry', () => {
   function stop() {
     if (timer.value) {
       clearTimeout(timer.value)
-      timer.value = undefined
     }
     attempts.value = 0
   }
