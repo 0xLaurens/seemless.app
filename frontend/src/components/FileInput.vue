@@ -25,5 +25,5 @@ function setFiles(event) {
     </form>
   </div>
   <!--  Temporary download button-->
-  <a v-if="rtc.blobURL.length > 0" target="_blank" :href="rtc.blobURL">Download Test</a>
+  <a v-if="rtc.blobURL.length > 0" target="_blank" :href="rtc.blobURL" download>Download Test</a>
 </template>
