@@ -11,13 +11,25 @@ export const useRtcStore = defineStore('rtc', () => {
   const CHUNK_SIZE = 65536 //64 KiB
   const blobURL = ref('')
   const test_buf: any[] = []
-  const rtc = new RTCPeerConnection()
+  let rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
   const user = useUserStore()
   const conn = useConnectedStore()
-  let dc = createDatachannel('files')
+  const DATACHANNEL_NAME = 'files'
+  let dc = createDatachannel(DATACHANNEL_NAME)
   let localFragment: string | null
 
-  rtc.ondatachannel = (dc) => setDatachannel(dc.channel)
+  rtc.ondatachannel = (dc) => {
+    console.log('DATACHANNEL RECEIVED')
+    setDatachannel(dc.channel)
+  }
+  rtc.onnegotiationneeded = async () => {}
+  rtc.oniceconnectionstatechange = () => {
+    console.log('ICE STATE CHANGED', rtc.connectionState)
+    if (rtc.connectionState == 'failed') {
+      console.log('ICE RESTART')
+      rtc.restartIce()
+    }
+  }
 
   function getPeerConnection() {
     return rtc
@@ -38,8 +50,10 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function addDcListeners(dc: RTCDataChannel) {
-    dc.onopen = () =>
+    dc.onopen = () => {
+      console.log('DATACHANNEL OPEN')
       dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientHello }))
+    }
     dc.onmessage = (ev) => {
       if (typeof ev.data === 'object') {
         recvFile(undefined, ev.data)
@@ -59,7 +73,9 @@ export const useRtcStore = defineStore('rtc', () => {
       recvFile(fileOrDcMessage, undefined)
     }
     dc.onclose = () => {
-      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientClose }))
+      console.log('DATACHANNEL CLOSE')
+      conn.clearConnectedUsers()
+      rtc = new RTCPeerConnection()
     }
   }
 
@@ -132,7 +148,12 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function createOffer(): Promise<RTCSessionDescriptionInit> {
-    console.log('CREATE OFFER')
+    console.log('CREATE OFFER', rtc)
+    if (dc.readyState == 'closed') {
+      console.log('NEW DATACHANNEL FOR CLOSED STATE')
+      dc = createDatachannel(DATACHANNEL_NAME)
+    }
+
     const offer = await rtc.createOffer()
     await rtc.setLocalDescription(offer)
     return offer
@@ -141,7 +162,8 @@ export const useRtcStore = defineStore('rtc', () => {
   async function createOfferAnswer(offer: SessionDescriptionMessage) {
     console.log('HANDLE OFFER ANSWER')
     offer.type = 'offer'
-    conn.createUserConnection(offer.from, true)
+    conn.addIceTarget(offer.from)
+    conn.addIceTarget(offer.target)
     await rtc.setRemoteDescription(offer).catch(console.error)
     const answer = await rtc.createAnswer()
     await rtc.setLocalDescription(answer)
@@ -152,6 +174,8 @@ export const useRtcStore = defineStore('rtc', () => {
   async function handleAnswer(answer: SessionDescriptionMessage) {
     console.log('HANDLE ANSWER')
     answer.type = 'answer'
+    conn.addIceTarget(answer.from)
+    conn.addIceTarget(answer.target)
     if (rtc.signalingState === 'stable') {
       return
     }

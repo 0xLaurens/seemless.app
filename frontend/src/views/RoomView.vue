@@ -23,11 +23,8 @@ const id = route.params.id
 const rtc = useRtcStore()
 const retry = useRetryStore()
 let pc: RTCPeerConnection
-let ws: Ref<WebSocket | undefined> = ref()
-// const ws.value = new WebSocket('ws.value://192.168.178.36:3000/ws.value') //thuis
-// const ws.value = new WebSocket('ws.value://127.0.0.1:3000/ws.value')
-
-let users = ref([])
+const ws: Ref<WebSocket | undefined> = ref()
+const users = ref([])
 
 onMounted(() => {
   openWS()
@@ -36,11 +33,11 @@ onMounted(() => {
   pc.onicecandidate = (ev) => {
     if (!ev.candidate) return
     rtc.setLocalFragment(ev.candidate.usernameFragment)
-    console.log(conn.getConnectedUsers())
-    for (const user of conn.getConnectedUsers()) {
-      console.log('ICE USER')
-      sendMessage(RequestTypes.NewIceCandidate, user, undefined, JSON.stringify(ev.candidate))
-    }
+    console.log(conn.getIceTargets())
+    // for (const user of conn.getConnectedUsers()) {
+    console.log('ICE USER')
+    sendMessage(RequestTypes.NewIceCandidate, undefined, undefined, JSON.stringify(ev.candidate))
+    // }
   }
 })
 
@@ -53,9 +50,7 @@ function sendMessage(type: string, target?: string, sdp?: string, candidate?: st
     candidate: candidate
   }
 
-  if (message.sdp) {
-    message.from = user.getUsername()
-  }
+  message.from = user.getUsername()
   ws.value?.send(JSON.stringify(message))
 }
 
@@ -70,7 +65,7 @@ async function sendOffer(username: string) {
 }
 
 function openWS() {
-  ws.value = new WebSocket('ws://192.168.178.36:3000/ws')
+  ws.value = new WebSocket(import.meta.env.VITE_WS_ADDR)
   ws.value.onmessage = async (event) => {
     let data = JSON.parse(event.data)
     switch (data.type) {
@@ -80,6 +75,7 @@ function openWS() {
         break
       }
       case RequestTypes.NewIceCandidate: {
+        console.log(data.from)
         await rtc.handleIceCandidate(JSON.parse(data.candidate))
         break
       }
@@ -88,6 +84,7 @@ function openWS() {
         break
       }
       case RequestTypes.Peers:
+        users.value = []
         for (let user of data.users) {
           if (user.username) users.value.push(user.username)
         }
@@ -127,7 +124,7 @@ function openWS() {
 }
 
 function reconnectWs() {
-  if (ws && ws.value?.readyState !== ws.value?.CLOSED) {
+  if (ws.value?.readyState !== ws.value?.CLOSED) {
     ws.value?.close()
   }
   openWS()
@@ -135,8 +132,9 @@ function reconnectWs() {
 }
 
 onUnmounted(() => {
+  console.log('UNMOUNTED')
   ws.value?.close()
-  for (const u of conn.getConnectedUsers()) {
+  for (const u of conn.getIceTargets()) {
     conn.removeUser(u)
   }
   rtc.close()
