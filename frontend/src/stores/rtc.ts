@@ -10,7 +10,7 @@ import { useConnectedStore } from '@/stores/connected'
 export const useRtcStore = defineStore('rtc', () => {
   const CHUNK_SIZE = 65536 //64 KiB
   const blobURL = ref('')
-  const test_buf: any[] = []
+  let test_buf: any[] = []
   let rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
   const user = useUserStore()
   const conn = useConnectedStore()
@@ -119,6 +119,7 @@ export const useRtcStore = defineStore('rtc', () => {
       const blob = new Blob(test_buf, { type: file.name })
       const blobFile = new File([blob], file.name)
       blobURL.value = URL.createObjectURL(blobFile)
+      test_buf = []
       return
     }
 
