@@ -31,6 +31,10 @@ export const useConnectedStore = defineStore('connected', () => {
     return Array.from(ice.value.keys())
   }
 
+  function userInIceTargets(username: string) {
+    return ice.value.has(username)
+  }
+
   function clearConnectedUsers() {
     connected.value.clear()
   }
@@ -41,6 +45,7 @@ export const useConnectedStore = defineStore('connected', () => {
     createUserConnection,
     getUserConnectionStatus,
     removeUser,
+    userInIceTargets,
     getConnectedUsers,
     clearConnectedUsers
   }

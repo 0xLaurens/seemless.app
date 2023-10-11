@@ -75,7 +75,8 @@ function openWS() {
         break
       }
       case RequestTypes.NewIceCandidate: {
-        console.log(data.from)
+        if (data.from === user.getUsername()) return
+        if (!conn.userInIceTargets(data.from)) return
         await rtc.handleIceCandidate(JSON.parse(data.candidate))
         break
       }
