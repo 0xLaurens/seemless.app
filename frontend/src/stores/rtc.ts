@@ -3,19 +3,44 @@ import type { SessionDescriptionMessage } from '@/models/sdm'
 import { ref } from 'vue'
 import type { FileMessage } from '@/models/file'
 import { FileStatus } from '@/models/file'
+import { useUserStore } from '@/stores/user'
+import { DcStatus } from '@/models/datachannel'
+import { useConnectedStore } from '@/stores/connected'
 
 export const useRtcStore = defineStore('rtc', () => {
   const CHUNK_SIZE = 65536 //64 KiB
   const blobURL = ref('')
-  const test_buf: any[] = []
-  const rtc = new RTCPeerConnection()
-  let dc = createDatachannel('files')
+  let test_buf: any[] = []
+  let rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
+  const user = useUserStore()
+  const conn = useConnectedStore()
+  const DATACHANNEL_NAME = 'files'
+  let dc = createDatachannel(DATACHANNEL_NAME)
   let localFragment: string | null
 
-  rtc.ondatachannel = (dc) => setDatachannel(dc.channel)
+  rtc.ondatachannel = (dc) => {
+    console.log('DATACHANNEL RECEIVED')
+    setDatachannel(dc.channel)
+  }
+  rtc.onnegotiationneeded = async () => {}
+  rtc.oniceconnectionstatechange = () => {
+    console.log('ICE STATE CHANGED', rtc.connectionState)
+    if (rtc.connectionState == 'failed') {
+      console.log('ICE RESTART')
+      rtc.restartIce()
+    }
+  }
 
   function getPeerConnection() {
     return rtc
+  }
+
+  function close() {
+    if (dc.readyState === 'open') {
+      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientClose }))
+    }
+
+    rtc.close()
   }
 
   function createDatachannel(name: string): RTCDataChannel {
@@ -25,18 +50,33 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function addDcListeners(dc: RTCDataChannel) {
-    dc.onopen = () => dc.send('Great Success!')
+    dc.onopen = () => {
+      console.log('DATACHANNEL OPEN')
+      dc.send(JSON.stringify({ username: user.getUsername(), status: DcStatus.ClientHello }))
+    }
     dc.onmessage = (ev) => {
       if (typeof ev.data === 'object') {
         recvFile(undefined, ev.data)
+        return
       }
 
-      if (isJSON(ev.data)) {
-        const file = JSON.parse(ev.data)
-        recvFile(file, undefined)
+      if (!isJSON(ev.data)) return
+
+      const fileOrDcMessage = JSON.parse(ev.data)
+
+      if (fileOrDcMessage.username && fileOrDcMessage.status) {
+        const connected = fileOrDcMessage.status === DcStatus.ClientHello
+        conn.createUserConnection(fileOrDcMessage.username, connected)
+        return
       }
+
+      recvFile(fileOrDcMessage, undefined)
     }
-    dc.onclose = (ev) => console.log(ev)
+    dc.onclose = () => {
+      console.log('DATACHANNEL CLOSE')
+      conn.clearConnectedUsers()
+      rtc = new RTCPeerConnection()
+    }
   }
 
   function isJSON(str: string) {
@@ -79,6 +119,7 @@ export const useRtcStore = defineStore('rtc', () => {
       const blob = new Blob(test_buf, { type: file.name })
       const blobFile = new File([blob], file.name)
       blobURL.value = URL.createObjectURL(blobFile)
+      test_buf = []
       return
     }
 
@@ -108,7 +149,12 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function createOffer(): Promise<RTCSessionDescriptionInit> {
-    console.log('CREATE OFFER')
+    console.log('CREATE OFFER', rtc)
+    if (dc.readyState == 'closed') {
+      console.log('NEW DATACHANNEL FOR CLOSED STATE')
+      dc = createDatachannel(DATACHANNEL_NAME)
+    }
+
     const offer = await rtc.createOffer()
     await rtc.setLocalDescription(offer)
     return offer
@@ -117,6 +163,8 @@ export const useRtcStore = defineStore('rtc', () => {
   async function createOfferAnswer(offer: SessionDescriptionMessage) {
     console.log('HANDLE OFFER ANSWER')
     offer.type = 'offer'
+    conn.addIceTarget(offer.from)
+    conn.addIceTarget(offer.target)
     await rtc.setRemoteDescription(offer).catch(console.error)
     const answer = await rtc.createAnswer()
     await rtc.setLocalDescription(answer)
@@ -127,10 +175,12 @@ export const useRtcStore = defineStore('rtc', () => {
   async function handleAnswer(answer: SessionDescriptionMessage) {
     console.log('HANDLE ANSWER')
     answer.type = 'answer'
+    conn.addIceTarget(answer.from)
+    conn.addIceTarget(answer.target)
     if (rtc.signalingState === 'stable') {
       return
     }
-
+    conn.createUserConnection(answer.from, true)
     await rtc.setRemoteDescription(answer).catch(console.error)
   }
 
@@ -146,6 +196,7 @@ export const useRtcStore = defineStore('rtc', () => {
 
   return {
     blobURL,
+    close,
     getPeerConnection,
     setDatachannel,
     setLocalFragment,

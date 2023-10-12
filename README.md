@@ -3,9 +3,10 @@
 BitDash is a Airdrop like application which allows users to share files with eachother no matter the platform the end user uses. The application works peer-to-peer to give the users exchanging files privacy, the server doesn't know what was exchanged since it never stored any of the files.
 
 ## Features
-- [ ] p2p connections
-- [ ] user discovery 
-- [ ] local network file sharing
+- [x] p2p connections
+- [x] user discovery 
+- [x] local network file sharing
+- [x] send files to a single user
 - [ ] file broadcasting to all users
 - [ ] outside of local-network file sharing
 - [ ] accept/deny files received 
