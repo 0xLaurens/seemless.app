@@ -56,7 +56,7 @@ func joinHelper(conn *ws.Conn) {
 	req := fiber.Map{
 		"type": data.RequestTypes.Username,
 		"body": fiber.Map{
-			"username": "user",
+			"username": "test_kees",
 		},
 	}
 
@@ -65,6 +65,7 @@ func joinHelper(conn *ws.Conn) {
 		return
 	}
 
+	_, _, err = conn.ReadMessage()
 	_, _, err = conn.ReadMessage()
 	_, _, err = conn.ReadMessage()
 	if err != nil {
@@ -565,7 +566,7 @@ func TestWsHandlerRequestTypesShouldBroadcast(t *testing.T) {
 		if err != nil {
 			t.Fatal("TEST ERR -->> failed to recv message", err)
 		}
-		assert.Equal(t, message, res)
+		assert.Equal(t, string(message), string(res))
 	}
 
 	err = app.Shutdown()
