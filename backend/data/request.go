@@ -13,6 +13,7 @@ var RequestTypes = struct {
 	Answer          RequestType
 	NewIceCandidate RequestType
 	PeerJoined      RequestType
+	Peers           RequestType
 	PeerLeft        RequestType
 	PeerUpdated     RequestType
 	Username        RequestType
@@ -21,6 +22,7 @@ var RequestTypes = struct {
 	Answer:          "Answer",
 	NewIceCandidate: "NewIceCandidate",
 	PeerJoined:      "PeerJoined",
+	Peers:           "Peers",
 	PeerLeft:        "PeerLeft",
 	PeerUpdated:     "PeerUpdated",
 	Username:        "Username",

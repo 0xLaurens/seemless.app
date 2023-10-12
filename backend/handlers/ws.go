@@ -60,6 +60,18 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 		}
 	}
 
+	users, err := hub.users.GetAllUsers()
+	if err != nil {
+		return
+	}
+	log.Printf("DBG -->> users: %v\n", users)
+	peersMsg := fiber.Map{
+		"type":  data.RequestTypes.Peers,
+		"users": users,
+	}
+
+	writeMSG(c, peersMsg)
+
 	user := data.CreateUser(username, "android", data.WithConnection(c))
 	hub.channels.register <- user
 
