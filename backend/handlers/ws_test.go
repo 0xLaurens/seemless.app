@@ -67,7 +67,6 @@ func joinHelper(conn *ws.Conn) {
 
 	_, _, err = conn.ReadMessage()
 	_, _, err = conn.ReadMessage()
-	_, _, err = conn.ReadMessage()
 	if err != nil {
 		return
 	}
