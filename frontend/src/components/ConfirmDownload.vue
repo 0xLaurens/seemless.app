@@ -10,9 +10,15 @@
         <h2 class="card-title text-white font-black text-2xl pb-3">
           {{ download.activeDownload?.from || 'Username' }} would like to send you
         </h2>
-        <p class="text-lg pb-6 break-all">
+        <p class="text-2xl hind pb-3 break-all">
           {{ download.activeDownload?.file.name || 'Filename' }}
         </p>
+        <img
+          class="pb-6 h-32 w-auto"
+          v-if="download.activeDownload?.mime.startsWith('image')"
+          :src="download.url"
+          alt="preview"
+        />
         <div class="card-actions justify-end">
           <button class="btn btn-outline" @click="download.removeDownload(download.activeDownload)">
             Deny
