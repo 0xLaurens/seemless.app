@@ -1,9 +1,10 @@
 package data
 
 type Request struct {
-	Type RequestType       `json:"type"`
-	From string            `json:"from"`
-	Body map[string]string `json:"body"`
+	Type   RequestType       `json:"type"`
+	From   string            `json:"from"`
+	Target string            `json:"target"`
+	Body   map[string]string `json:"body"`
 }
 
 type RequestType string
@@ -13,18 +14,18 @@ var RequestTypes = struct {
 	Answer          RequestType
 	NewIceCandidate RequestType
 	PeerJoined      RequestType
-	Peers           RequestType
 	PeerLeft        RequestType
 	PeerUpdated     RequestType
+	Peers           RequestType
 	Username        RequestType
 }{
 	Offer:           "Offer",
 	Answer:          "Answer",
 	NewIceCandidate: "NewIceCandidate",
 	PeerJoined:      "PeerJoined",
-	Peers:           "Peers",
 	PeerLeft:        "PeerLeft",
 	PeerUpdated:     "PeerUpdated",
+	Peers:           "Peers",
 	Username:        "Username",
 }
 

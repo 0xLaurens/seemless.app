@@ -59,7 +59,6 @@ func WSHandler(c *websocket.Conn, hub *Hub) {
 			username = ""
 		}
 	}
-
 	users, err := hub.users.GetAllUsers()
 	if err != nil {
 		return
