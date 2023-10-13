@@ -120,7 +120,7 @@ export const useRtcStore = defineStore('rtc', () => {
     if (file?.status === FileStatus.Complete) {
       console.log('TRANSFER COMPLETE')
       const blob = new Blob(test_buf, { type: file.name })
-      const load: Download = { from: file.from, file: new File([blob], file.name) }
+      const load: Download = { from: file.from, file: new File([blob], file.name), mime: file.mime }
       download.addDownload(load)
       test_buf = []
       return
