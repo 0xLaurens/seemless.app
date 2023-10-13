@@ -5,17 +5,26 @@
     v-if="download.popup"
     :aria-hidden="download.popup"
   >
-    <div class="">
-      <div class="card w-96 bg-neutral text-neutral-content">
-        <div class="card-body items-center text-center">
-          <h2 class="card-title text-white font-black text-2xl pb-3">
-            Username would like to send you
-          </h2>
-          <p class="text-lg pb-6">filename.png</p>
-          <div class="card-actions justify-end">
-            <button class="btn btn-outline">Deny</button>
-            <button class="btn btn-primary">Accept</button>
-          </div>
+    <div @click.stop class="card w-96 bg-neutral text-neutral-content">
+      <div class="card-body items-center text-center">
+        <h2 class="card-title text-white font-black text-2xl pb-3">
+          {{ download.activeDownload?.from || 'Username' }} would like to send you
+        </h2>
+        <p class="text-lg pb-6 break-all">
+          {{ download.activeDownload?.file.name || 'Filename' }}
+        </p>
+        <div class="card-actions justify-end">
+          <button class="btn btn-outline" @click="download.removeDownload(download.activeDownload)">
+            Deny
+          </button>
+          <a
+            class="btn btn-primary"
+            @click="download.removeDownload(download.activeDownload)"
+            :href="download.url"
+            download
+          >
+            Accept
+          </a>
         </div>
       </div>
     </div>
