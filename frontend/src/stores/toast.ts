@@ -18,12 +18,24 @@ export const useToastStore = defineStore('toast', () => {
   function notify(settings: ToastSettings) {
     const id: string = randomUUID()
     const toast: Toast = { ...settings, id }
-    setTimeout(close, 5000, id)
+    toast.timeoutId = setTimeout(close, 5000, id)
     toasts.value.push(toast)
+  }
+
+  function freeze(timeoutId: number | undefined) {
+    if (!timeoutId) return
+    clearTimeout(timeoutId)
+  }
+
+  function unfreeze(id: string) {
+    const toast = toasts.value.filter((t) => t.id === id)[0]
+    toast.timeoutId = setTimeout(close, 5000, id)
   }
 
   return {
     toasts,
+    freeze,
+    unfreeze,
     notify,
     close
   }
