@@ -6,6 +6,8 @@ import { FileStatus } from '@/models/file'
 import { useUserStore } from '@/stores/user'
 import { DcStatus } from '@/models/datachannel'
 import { useConnectedStore } from '@/stores/connected'
+import { useDownloadStore } from '@/stores/download'
+import type { Download } from '@/models/download'
 
 export const useRtcStore = defineStore('rtc', () => {
   const CHUNK_SIZE = 65536 //64 KiB
@@ -14,6 +16,7 @@ export const useRtcStore = defineStore('rtc', () => {
   let rtc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
   const user = useUserStore()
   const conn = useConnectedStore()
+  const download = useDownloadStore()
   const DATACHANNEL_NAME = 'files'
   let dc = createDatachannel(DATACHANNEL_NAME)
   let localFragment: string | null
@@ -117,8 +120,8 @@ export const useRtcStore = defineStore('rtc', () => {
     if (file?.status === FileStatus.Complete) {
       console.log('TRANSFER COMPLETE')
       const blob = new Blob(test_buf, { type: file.name })
-      const blobFile = new File([blob], file.name)
-      blobURL.value = URL.createObjectURL(blobFile)
+      const load: Download = { from: file.from, file: new File([blob], file.name), mime: file.mime }
+      download.addDownload(load)
       test_buf = []
       return
     }
@@ -129,7 +132,12 @@ export const useRtcStore = defineStore('rtc', () => {
   }
 
   async function sendFile(file: File) {
-    const pl: FileMessage = { mime: file.type, name: file.name, status: FileStatus.Busy }
+    const pl: FileMessage = {
+      mime: file.type,
+      name: file.name,
+      status: FileStatus.Busy,
+      from: user.getUsername()
+    }
     let buf = await file.arrayBuffer()
     while (buf.byteLength) {
       const chunk = buf.slice(0, CHUNK_SIZE)

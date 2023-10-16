@@ -14,6 +14,7 @@ import FileInput from '@/components/FileInput.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useConnectedStore } from '@/stores/connected'
 import { useRetryStore } from '@/stores/retry'
+import ConfirmDownload from '@/components/ConfirmDownload.vue'
 
 const user = useUserStore()
 const conn = useConnectedStore()
@@ -143,6 +144,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <confirm-download />
   <div class="pt-10 pb-4 sm:pt-16 lg:overflow-hidden lg:pt-8 lg:pb-4">
     <div class="mx-auto max-w-7xl lg:px-8">
       <div class="w-full px-4 sm:px-6 sm:text-center lg:px-0">
