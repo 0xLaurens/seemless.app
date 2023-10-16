@@ -1,5 +1,5 @@
 <template>
-  <div class="toast toast-center">
+  <div class="toast toast-top toast-end">
     <toast-popup v-bind:key="t.id" v-for="t in toast.toasts" :toast="t" />
   </div>
 </template>
