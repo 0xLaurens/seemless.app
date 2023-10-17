@@ -8,11 +8,13 @@ import type { Message } from '@/models/message'
 import { useConnStore } from '@/stores/connection'
 import { ToastType } from '@/models/toast'
 import router from '@/router'
+import { useRetryStore } from '@/stores/retry'
 
 export const useWebsocketStore = defineStore('ws', () => {
   const user = useUserStore()
   const conn = useConnStore()
   const toast = useToastStore()
+  const retry = useRetryStore()
 
   const ws: Ref<WebSocket | undefined> = ref()
 
@@ -23,6 +25,7 @@ export const useWebsocketStore = defineStore('ws', () => {
     ws.value.onmessage = async (event) => _onMessage(event)
     ws.value.onclose = () => _onClose()
     ws.value.onopen = () => _onOpen()
+    ws.value.onerror = () => _onError()
   }
 
   async function _onMessage(event: MessageEvent<any>) {
@@ -69,6 +72,8 @@ export const useWebsocketStore = defineStore('ws', () => {
   }
 
   function _onOpen() {
+    retry.stop()
+    toast.notify({ message: 'Connected to room', type: ToastType.Success })
     const payload = {
       type: 'Username',
       body: {
@@ -79,7 +84,26 @@ export const useWebsocketStore = defineStore('ws', () => {
     ws.value?.send(JSON.stringify(payload))
   }
 
-  function _onClose() {}
+  function _onClose() {
+    if (retry.isActive()) return
+    toast.notify({ message: 'Disconnected from room', type: ToastType.Warning })
+    retry.start(() => {
+      _reconnectWs()
+    })
+  }
+
+  function _onError() {
+    if (retry.isActive()) return
+  }
+
+  function _reconnectWs() {
+    console.log('reconnecting')
+    if (ws.value?.readyState !== ws.value?.CLOSED) {
+      Close()
+    }
+    ws.value = undefined
+    Open()
+  }
 
   function SendMessage(msg: Message | undefined) {
     if (ws.value === undefined) {
