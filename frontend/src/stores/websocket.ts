@@ -37,9 +37,7 @@ export const useWebsocketStore = defineStore('ws', () => {
         break
       }
       case RequestTypes.NewIceCandidate: {
-        // if (data.from === user.getUsername()) return
-        // if (!connected.userInIceTargets(data.from)) return
-        // await rtc.handleIceCandidate(JSON.parse(data.candidate))
+        await conn.HandleIceCandidate(data)
         break
       }
       case RequestTypes.Answer: {
@@ -57,7 +55,6 @@ export const useWebsocketStore = defineStore('ws', () => {
         break
       case RequestTypes.UsernamePrompt:
       case RequestTypes.Username:
-        console.log(data.message)
         break
       case RequestTypes.DuplicateUsername:
         toast.notify({
