@@ -2,6 +2,6 @@ export type Message = {
   type: string
   target?: string
   sdp?: string
-  candidate?: string
+  candidate?: RTCIceCandidateInit | null
   from?: string
 }
