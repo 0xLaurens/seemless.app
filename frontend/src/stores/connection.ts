@@ -9,11 +9,14 @@ import { useUserStore } from '@/stores/user'
 import { RequestTypes } from '@/models/request'
 import type { Message } from '@/models/message'
 import { useWebsocketStore } from '@/stores/websocket'
+import { isJSON } from '@/utils/json'
+import { useFileStore } from '@/stores/file'
 
 export const useConnStore = defineStore('conn', () => {
   const user = useUserStore()
   const toast = useToastStore()
   const ws = useWebsocketStore()
+  const file = useFileStore()
 
   const DATACHANNEL_NAME = 'files'
   const conn: Ref<Map<string, Connection>> = ref(new Map())
@@ -43,7 +46,18 @@ export const useConnStore = defineStore('conn', () => {
       connection.dc?.send('Hello')
       toast.notify({ message: 'Datachannel Opened', type: ToastType.Success })
     }
-    connection.dc.onmessage = (m) => console.log(m)
+    connection.dc.onmessage = (ev) => {
+      if (typeof ev.data === 'object') {
+        file.buildFile(undefined, ev.data)
+        return
+      }
+
+      if (!isJSON(ev.data)) return
+
+      const fileJson = JSON.parse(ev.data)
+
+      file.buildFile(fileJson, undefined)
+    }
     connection.dc.onclose = () => {
       toast.notify({ message: 'Datachannel Closed :(', type: ToastType.Warning })
     }
@@ -137,10 +151,15 @@ export const useConnStore = defineStore('conn', () => {
     await _addIceCandidate(message.candidate, message.from)
   }
 
+  function GetConnections() {
+    return Array.from(conn.value.values())
+  }
+
   return {
     CreateRtcOffer,
     HandleRtcOffer,
     HandleRtcAnswer,
-    HandleIceCandidate
+    HandleIceCandidate,
+    GetConnections
   }
 })
