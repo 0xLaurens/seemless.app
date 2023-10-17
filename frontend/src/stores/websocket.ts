@@ -7,6 +7,7 @@ import { useToastStore } from '@/stores/toast'
 import type { Message } from '@/models/message'
 import { useConnStore } from '@/stores/connection'
 import { ToastType } from '@/models/toast'
+import router from '@/router'
 
 export const useWebsocketStore = defineStore('ws', () => {
   const user = useUserStore()
@@ -43,22 +44,24 @@ export const useWebsocketStore = defineStore('ws', () => {
         break
       }
       case RequestTypes.Peers:
-        console.log('Peers', data)
         user.initUsers(data.users)
         break
       case RequestTypes.PeerJoined:
-        console.log('PeerJoined', data)
         user.addUser(data.user)
         break
       case RequestTypes.PeerLeft:
-        console.log('PeerLeft', data)
-        console.log(data)
         user.removeUser(data.user)
         break
       case RequestTypes.UsernamePrompt:
       case RequestTypes.Username:
-      case RequestTypes.DuplicateUsername:
         console.log(data.message)
+        break
+      case RequestTypes.DuplicateUsername:
+        toast.notify({
+          message: 'This username has already been taken in this room',
+          type: ToastType.Warning
+        })
+        await router.push({ path: '/nick' })
         break
       default:
         console.log(`Unknown type ${data.type}`)
@@ -101,9 +104,14 @@ export const useWebsocketStore = defineStore('ws', () => {
     ws.value?.close()
   }
 
+  function GetConnection() {
+    return ws.value
+  }
+
   return {
     Open,
     Close,
+    GetConnection,
     SendMessage
   }
 })
