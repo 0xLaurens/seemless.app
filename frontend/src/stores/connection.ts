@@ -59,7 +59,11 @@ export const useConnStore = defineStore('conn', () => {
       file.buildFile(fileJson, undefined)
     }
     connection.dc.onclose = () => {
-      toast.notify({ message: 'Datachannel Closed :(', type: ToastType.Warning })
+      toast.notify({
+        message: `Connection lost to ${connection.username}`,
+        type: ToastType.Warning
+      })
+      conn.value.delete(connection.username)
     }
     connection.dc.onerror = (err) => console.error(err)
   }
@@ -155,11 +159,17 @@ export const useConnStore = defineStore('conn', () => {
     return Array.from(conn.value.values())
   }
 
+  function GetUserConnection(target: string) {
+    return conn.value.get(target)
+  }
+
   return {
     CreateRtcOffer,
     HandleRtcOffer,
     HandleRtcAnswer,
     HandleIceCandidate,
-    GetConnections
+    GetConnections,
+    conn,
+    GetUserConnection
   }
 })
