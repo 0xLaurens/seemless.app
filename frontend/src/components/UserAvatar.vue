@@ -2,9 +2,19 @@
 import { useUserStore } from '@/stores/user'
 import { useConnectedStore } from '@/stores/connected'
 import type { User } from '@/models/user'
+import { useConnStore } from '@/stores/connection'
+import { useWebsocketStore } from '@/stores/websocket'
 
 const connStore = useConnectedStore()
 const props = defineProps<{ user: User }>()
+
+const conn = useConnStore()
+const ws = useWebsocketStore()
+
+async function sendOffer(username: string) {
+  const offer = await conn.CreateRtcOffer(username)
+  ws.SendMessage(offer)
+}
 
 const userStore = useUserStore()
 const isUser = userStore.getUsername() === props.user.username
@@ -14,6 +24,7 @@ const isUser = userStore.getUsername() === props.user.username
   <div
     class="user justify-center text-center mr-6 group"
     :class="{ 'cursor-pointer': !isUser, 'cursor-default': isUser }"
+    @click="!isUser ? sendOffer(user.username) : null"
   >
     <div class="avatar placeholder mb-2">
       <div
