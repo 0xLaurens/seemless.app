@@ -10,7 +10,7 @@ export const useRetryStore = defineStore('retry', () => {
   const timer: Ref<number | undefined> = ref()
 
   function start(fn: () => void) {
-    if (timer.value !== undefined) clearTimeout(timer.value)
+    if (isActive()) clearTimeout(timer.value)
 
     let backOffDuration = MAX_TIMEOUT
     if (attempts.value < 3) {
@@ -31,5 +31,9 @@ export const useRetryStore = defineStore('retry', () => {
     attempts.value = 0
   }
 
-  return { start, stop }
+  function isActive() {
+    return timer.value != undefined
+  }
+
+  return { start, stop, isActive }
 })
