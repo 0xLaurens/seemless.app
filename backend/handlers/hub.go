@@ -55,8 +55,11 @@ func (h *Hub) Run() {
 				return
 			}
 			msg, err := json.Marshal(fiber.Map{
-				"type":     data.RequestTypes.PeerJoined,
-				"username": user.Username,
+				"type": data.RequestTypes.PeerJoined,
+				"user": fiber.Map{
+					"username": user.Username,
+					"device":   user.Device,
+				},
 			})
 			if err != nil {
 				log.Println("ERR -->> json marshal failed", err)
@@ -71,8 +74,11 @@ func (h *Hub) Run() {
 				return
 			}
 			msg, err := json.Marshal(fiber.Map{
-				"type":     data.RequestTypes.PeerLeft,
-				"username": user.Username,
+				"type": data.RequestTypes.PeerLeft,
+				"user": fiber.Map{
+					"username": user.Username,
+					"device":   user.Device,
+				},
 			})
 			if err != nil {
 				log.Println("ERR -->> json marshal failed", err)
