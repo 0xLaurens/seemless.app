@@ -8,10 +8,12 @@ import type { SessionDescriptionMessage } from '@/models/sdm'
 import { useUserStore } from '@/stores/user'
 import { RequestTypes } from '@/models/request'
 import type { Message } from '@/models/message'
+import { useWebsocketStore } from '@/stores/websocket'
 
 export const useConnStore = defineStore('conn', () => {
   const user = useUserStore()
   const toast = useToastStore()
+  const ws = useWebsocketStore()
 
   const DATACHANNEL_NAME = 'files'
   const conn: Ref<Map<string, Connection>> = ref(new Map())
@@ -25,23 +27,41 @@ export const useConnStore = defineStore('conn', () => {
       _setupDatachannelEventListeners(connection)
     }
     connection.pc.onicecandidate = (ice) => {
-      toast.notify({ message: `ICE candidate ${ice.type}`, type: ToastType.Info })
+      const message: Message = {
+        candidate: ice.candidate,
+        from: user.getUsername(),
+        target: connection.username,
+        type: RequestTypes.NewIceCandidate
+      }
+      ws.SendMessage(message)
     }
   }
 
   function _setupDatachannelEventListeners(connection: Connection) {
     if (!connection.dc) return
-    connection.dc.onopen = () =>
+    connection.dc.onopen = () => {
+      connection.dc?.send('Hello')
       toast.notify({ message: 'Datachannel Opened', type: ToastType.Success })
+    }
     connection.dc.onmessage = (m) => console.log(m)
-    connection.dc.onclose = () =>
+    connection.dc.onclose = () => {
       toast.notify({ message: 'Datachannel Closed :(', type: ToastType.Warning })
+    }
+    connection.dc.onerror = (err) => console.error(err)
   }
 
   // ICE helper functions
-  function _addIceCandidate(ice: RTCIceCandidate) {}
+  async function _addIceCandidate(
+    ice: RTCIceCandidateInit | undefined | null,
+    from: string | undefined
+  ) {
+    if (ice === null) return
+    if (from === undefined) return
+    const connection = conn.value.get(from)
+    if (connection === undefined) return
 
-  function _removeIceCandidate() {}
+    await connection.pc.addIceCandidate(ice)
+  }
 
   /////////////
   ///  RTC  ///
@@ -51,7 +71,6 @@ export const useConnStore = defineStore('conn', () => {
       pc: new RTCPeerConnection(),
       username: username
     }
-    connection.dc = connection.pc.createDataChannel(DATACHANNEL_NAME)
     _setupRtcConnEventListeners(connection)
     conn.value.set(username, connection)
   }
@@ -66,6 +85,11 @@ export const useConnStore = defineStore('conn', () => {
       })
       return undefined
     }
+
+    connection.dc = connection.pc.createDataChannel(DATACHANNEL_NAME)
+    _setupDatachannelEventListeners(connection)
+    _setupRtcConnEventListeners(connection)
+
     const offer = await connection.pc.createOffer()
     await connection.pc.setLocalDescription(offer)
     return {
@@ -107,9 +131,16 @@ export const useConnStore = defineStore('conn', () => {
     toast.notify({ message: 'Received: Answer!', type: ToastType.Success })
   }
 
+  async function HandleIceCandidate(message: Message | undefined) {
+    if (message === undefined) return
+
+    await _addIceCandidate(message.candidate, message.from)
+  }
+
   return {
     CreateRtcOffer,
     HandleRtcOffer,
-    HandleRtcAnswer
+    HandleRtcAnswer,
+    HandleIceCandidate
   }
 })
