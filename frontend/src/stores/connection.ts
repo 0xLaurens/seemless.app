@@ -42,10 +42,6 @@ export const useConnStore = defineStore('conn', () => {
 
   function _setupDatachannelEventListeners(connection: Connection) {
     if (!connection.dc) return
-    connection.dc.onopen = () => {
-      connection.dc?.send('Hello')
-      toast.notify({ message: 'Datachannel Opened', type: ToastType.Success })
-    }
     connection.dc.onmessage = (ev) => {
       if (typeof ev.data === 'object') {
         file.buildFile(undefined, ev.data)
