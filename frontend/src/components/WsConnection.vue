@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { readonly, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import DisconnectedIcon from '@/components/icons/DisconnectedIcon.vue'
 import ConnectedIcon from '@/components/icons/ConnectedIcon.vue'
+import { useWebsocketStore } from '@/stores/websocket'
 
 const hasConnection = ref(false)
 
-const props = defineProps({
-  ws: WebSocket
-})
+const ws = useWebsocketStore()
+
 watch(
-  () => props.ws,
+  () => ws.GetConnection(),
   (webSocket: WebSocket | undefined) => {
     webSocket?.addEventListener('open', () => (hasConnection.value = true))
     webSocket?.addEventListener('close', () => (hasConnection.value = false))
