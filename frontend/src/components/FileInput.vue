@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { useRtcStore } from '@/stores/rtc'
-import { Ref, ref } from 'vue'
+import { ref } from 'vue'
+import type { Ref } from 'vue'
+import { useFileStore } from '@/stores/file'
 
-let rtc = useRtcStore()
+const fileStore = useFileStore()
 let files: Ref<File[]> = ref([])
 
-function setFiles(event) {
+function setFiles(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (!target.files) return
   files.value = []
-  for (const file of event.target.files) {
+
+  for (const file of target.files) {
     files.value.push(file)
   }
 }
@@ -15,7 +19,7 @@ function setFiles(event) {
 
 <template>
   <div class="flex space-y-3">
-    <form @submit.prevent="files.length < 1" @submit="rtc.sendFiles(files)">
+    <form @submit.prevent="files.length < 1" @submit="fileStore.sendFiles(files)">
       <input
         v-on:change="setFiles"
         type="file"
@@ -24,6 +28,4 @@ function setFiles(event) {
       <button :disabled="files.length < 1" type="submit" class="btn btn-primary">Send</button>
     </form>
   </div>
-  <!--  Temporary download button-->
-  <a v-if="rtc.blobURL.length > 0" target="_blank" :href="rtc.blobURL" download>Download Test</a>
 </template>
