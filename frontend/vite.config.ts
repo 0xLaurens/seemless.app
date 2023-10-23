@@ -17,6 +17,7 @@ export default defineConfig({
                 short_name: "BitDash",
                 description: "peer-to-peer file sharing",
                 theme_color: "#4C08DE",
+                background_color: "#4C08DE",
                 icons: [
                     {
                         src: 'pwa-64x64.png',
