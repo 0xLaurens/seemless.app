@@ -18,7 +18,7 @@ function selectNickname() {
   }
 
   user.setUsername(username.value)
-  router.push({path: '/network'})
+  router.push({path: '/room/local'})
 }
 </script>
 
