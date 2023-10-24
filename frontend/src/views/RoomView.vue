@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {useRoute} from 'vue-router'
 import QrIcon from '@/components/icons/QrIcon.vue'
-import PlaneIcon from '@/components/icons/PlaneIcon.vue'
 import BackIcon from '@/components/icons/BackIcon.vue'
 import {useUserStore} from '@/stores/user'
 import {onMounted, onUnmounted} from 'vue'

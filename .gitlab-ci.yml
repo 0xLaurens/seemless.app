@@ -1,5 +1,6 @@
 stages:
   - test
+  - qa
 
 backend-test:
   stage: test
@@ -12,6 +13,23 @@ backend-test:
     - cd backend
     - go test -v ./... -count=1
 
+backend-qodana:
+  image:
+    name: jetbrains/qodana-go:latest
+    entrypoint: [""]
+  cache:
+    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
+      fallback_keys:
+        - qodana-2023.2-$CI_DEFAULT_BRANCH-
+        - qodana-2023.2-
+      paths:
+        - .qodana/cache
+  variables:
+    QODANA_TOKEN: $qodana_token
+  script:
+    - cp qodana-backend.yaml qodana.yaml
+    - qodana --cache-dir=$CI_PROJECT_DIR/.qodana/cache  --source-directory=backend --baseline=qodana-backend.sarif.json
+
 frontend-test:
   stage: test
   image: node:latest
@@ -23,3 +41,20 @@ frontend-test:
     - cd frontend
     - npm install --progress=false
     - npm run test:unit
+
+frontend-qodana:
+  image:
+    name: jetbrains/qodana-js:latest
+    entrypoint: [""]
+  cache:
+    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
+      fallback_keys:
+        - qodana-2023.2-$CI_DEFAULT_BRANCH-
+        - qodana-2023.2-
+      paths:
+        - .qodana/cache
+  variables:
+    QODANA_TOKEN: $qodana_token
+  script:
+    - cp qodana-frontend.yaml qodana.yaml
+    - qodana --cache-dir=$CI_PROJECT_DIR/.qodana/cache --source-directory=frontend --baseline=qodana-frontend.sarif.json
