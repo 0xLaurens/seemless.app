@@ -60,7 +60,12 @@ onUnmounted(() => {
         </div>
 
         <div class="pb-10">
-          <ws-connection/>
+          <div class="flex justify-center">
+            <file-input/>
+          </div>
+          <div>
+            <ws-connection/>
+          </div>
         </div>
       </section>
     </div>
