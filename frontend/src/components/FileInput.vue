@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Ref } from 'vue'
-import { useFileStore } from '@/stores/file'
+import {ref} from 'vue'
+import type {Ref} from 'vue'
+import {useFileStore} from '@/stores/file'
 
 const fileStore = useFileStore()
 let files: Ref<File[]> = ref([])
@@ -18,14 +18,14 @@ function setFiles(event: Event) {
 </script>
 
 <template>
-  <div class="flex space-y-3">
+  <div class="flex pb-6">
     <form @submit.prevent="files.length < 1" @submit="fileStore.sendFiles(files)">
       <input
-        v-on:change="setFiles"
-        type="file"
-        class="file-input file-input-bordered w-full max-w-xs"
+          v-on:change="setFiles"
+          type="file"
+          class="file-input file-input-bordered file-input-primary w-full md:w-auto max-w-md md:mr-10 mb-3 md:mb-0"
       />
-      <button :disabled="files.length < 1" type="submit" class="btn btn-primary">Send</button>
+      <button :disabled="files.length < 1" type="submit" class="btn w-full md:btn-wide btn-primary">Send</button>
     </form>
   </div>
 </template>
