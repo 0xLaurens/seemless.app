@@ -28,51 +28,41 @@ onUnmounted(() => {
 
 <template>
   <confirm-download/>
-  <div class="pt-10 pb-4 sm:pt-16 lg:overflow-hidden lg:pt-8 lg:pb-4">
-    <div class="mx-auto max-w-7xl lg:px-8">
-      <div class="w-full px-4 sm:px-6 sm:text-center lg:px-0">
-        <div class="relative lg:pt-12">
-          <div class="flex justify-between align-middle">
-            <router-link to="../network" class="btn btn-md md:btn-lg btn-ghost font-black">
-              <back-icon/>
-            </router-link>
-            <h1 class="text-4xl font-black text-center text-black dark:text-white capitalize mb-24">
-              Room: {{ id }}
-            </h1>
-            <button class="btn btn-md md:btn-lg btn-accent btn-outline">
-              <qr-icon/>
-            </button>
+  <div class="flex justify-start md:justify-center">
+    <div class="max-w-4xl align-middle justify-center px-4 w-full">
+      <section class="flex flex-col h-screen justify-between">
+        <div class="relative pt-10">
+          <div class="flex flex-row justify-between items-center w-full">
+            <div>
+              <router-link to="../nick" class="btn btn-md md:btn-lg btn-ghost font-black">
+                <back-icon/>
+              </router-link>
+            </div>
+            <div>
+              <h1 class="text-2xl lg:text-4xl font-black text-center text-black dark:text-white capitalize">
+                Room: {{ id }}
+              </h1>
+            </div>
+            <div>
+              <button class="btn btn-md md:btn-lg btn-accent btn-outline">
+                <qr-icon/>
+              </button>
+            </div>
           </div>
         </div>
-
-        <div class="users-box flow-root mb-24">
+        <div class="users-box flow-root">
           <div class="flex flex-wrap justify-center align-middle">
             <div :key="u.username" v-for="u in user.users">
               <user-avatar :user="u"/>
             </div>
+            <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
           </div>
         </div>
 
-        <div>
+        <div class="pb-10">
           <ws-connection/>
         </div>
-
-        <div class="relative mb-24">
-          <div class="flex justify-center flex-wrap space-x-6 pt-5">
-            <file-input/>
-          </div>
-        </div>
-
-        <div class="relative mb-24">
-          <div class="flex justify-center flex-wrap space-x-6 pt-5">
-            <button class="btn btn-md md:btn-lg btn-primary">Upload File</button>
-            <button class="btn btn-md md:btn-lg btn-primary">
-              Broadcast
-              <plane-icon/>
-            </button>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   </div>
 </template>
