@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/fasthttp/websocket v1.5.4
-	github.com/gofiber/contrib/websocket v1.2.1
+	github.com/gofiber/contrib/websocket v1.2.2
 	github.com/gofiber/fiber/v2 v2.49.2
 	github.com/stretchr/testify v1.8.4
 )
