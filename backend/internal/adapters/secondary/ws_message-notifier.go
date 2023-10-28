@@ -10,10 +10,12 @@ type WebsocketMsgNotifier struct {
 	conn *websocket.Conn
 }
 
-func NewWebsocketMsgNotifier(conn *websocket.Conn) *WebsocketMsgNotifier {
-	return &WebsocketMsgNotifier{
-		conn: conn,
-	}
+func NewWebsocketMsgNotifier() *WebsocketMsgNotifier {
+	return &WebsocketMsgNotifier{}
+}
+
+func (m *WebsocketMsgNotifier) SetWebsocketMsgNotifierConn(conn *websocket.Conn) {
+	m.conn = conn
 }
 
 func (m *WebsocketMsgNotifier) Read() (*data.Message, error) {

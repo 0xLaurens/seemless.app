@@ -6,6 +6,7 @@ import (
 	"laurensdrop/internal/adapters/secondary"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/core/services"
+	"laurensdrop/internal/core/utils"
 	"laurensdrop/internal/ports"
 	"log"
 )
@@ -18,7 +19,7 @@ type WebsocketHandler struct {
 func NewWebsocketHandler(us ports.UserRepo) *WebsocketHandler {
 	return &WebsocketHandler{
 		us:  services.NewUserService(us),
-		msg: nil,
+		msg: services.NewMessageService(us, secondary.NewWebsocketMsgNotifier()),
 	}
 }
 
@@ -30,7 +31,7 @@ func (wh *WebsocketHandler) UpgradeWebsocket(c *fiber.Ctx) error {
 }
 
 func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
-	wh.msg = services.NewMessageService(wh.us, secondary.NewWebsocketMsgNotifier(c))
+	wh.msg.SetWebsocketMsgNotifierConn(c)
 	username := ""
 	err := wh.msg.SendJSON(fiber.Map{
 		"type":    "UsernamePrompt",
@@ -42,7 +43,7 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 	}
 
 	for username == "" {
-		msg, err := wh.msg.Read()
+		msg, err := ReadMessage(c)
 		if err != nil {
 			log.Println("ERR -->> read message", err)
 			return err
@@ -101,14 +102,29 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 
 	log.Printf("DBG -->> created user: %v", user.Username)
 	for {
-		msg, err := wh.msg.Read()
+		msg, err := ReadMessage(c)
 		if err != nil {
 			log.Println("ERR -->> read message", err)
 			return err
 		}
-		log.Printf("DBG -->> recv: %s", msg)
+		log.Println("DBG -->>", msg.Type, msg.SDP)
 		wh.WsRequestHandler(msg)
 	}
+}
+
+func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
+	_, raw, err := conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	message := &data.Message{}
+	err = utils.MapJsonToStruct(raw, message)
+	if err != nil {
+		return nil, err
+	}
+
+	return message, nil
 }
 
 func (wh *WebsocketHandler) wsDefer(user *data.User) {
@@ -126,7 +142,6 @@ func (wh *WebsocketHandler) wsDefer(user *data.User) {
 }
 
 func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
-	log.Println("DBG", msg)
 	switch msg.Type {
 	case data.MessageTypes.Offer,
 		data.MessageTypes.Answer,
@@ -136,6 +151,7 @@ func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
 		data.MessageTypes.NewIceCandidate:
 		err := wh.msg.Broadcast(msg)
 		if err != nil {
+			log.Println("ERR ws handler", err)
 			return
 		}
 		break

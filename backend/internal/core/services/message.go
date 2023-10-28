@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/gofiber/contrib/websocket"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/ports"
 )
@@ -15,6 +16,10 @@ func NewMessageService(us ports.UserService, notifier ports.MessageNotifier) *Me
 		users:    us,
 		notifier: notifier,
 	}
+}
+
+func (m *MessageService) SetWebsocketMsgNotifierConn(conn *websocket.Conn) {
+	m.notifier.SetWebsocketMsgNotifierConn(conn)
 }
 
 func (m *MessageService) Read() (*data.Message, error) {
@@ -34,6 +39,15 @@ func (m *MessageService) Broadcast(msg *data.Message) error {
 	if err != nil {
 		return err
 	}
+	if msg.Target != "" {
+		target, err := m.users.GetUserByName(msg.Target)
+		if err != nil {
+			return err
+		}
+
+		return m.notifier.SendTargeted(msg, target)
+	}
+
 	for _, user := range users {
 		err := m.notifier.SendTargeted(msg, user)
 		if err != nil {
