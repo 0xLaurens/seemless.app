@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"laurensdrop/internal/adapters/secondary"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/core/services"
 	"laurensdrop/internal/ports"
@@ -29,7 +30,7 @@ func (wh *WebsocketHandler) UpgradeWebsocket(c *fiber.Ctx) error {
 }
 
 func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
-	wh.msg = services.NewMessageService(wh.us, c)
+	wh.msg = services.NewMessageService(wh.us, secondary.NewWebsocketMsgNotifier(c))
 	username := ""
 	err := wh.msg.SendJSON(fiber.Map{
 		"type":    "UsernamePrompt",
@@ -111,8 +112,10 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 }
 
 func (wh *WebsocketHandler) wsDefer(user *data.User) {
+	log.Println("DBG", "defer")
 	err := wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerLeft, User: user, From: user.Username})
 	if err != nil {
+		log.Println("ERR", err)
 		return
 	}
 	_, err = wh.us.RemoveUser(user.Username)
@@ -122,6 +125,7 @@ func (wh *WebsocketHandler) wsDefer(user *data.User) {
 }
 
 func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
+	log.Println("DBG", msg)
 	switch msg.Type {
 	case data.MessageTypes.Offer,
 		data.MessageTypes.Answer,
