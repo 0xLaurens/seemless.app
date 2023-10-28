@@ -1,102 +1,48 @@
 package services
 
 import (
-	"errors"
-	"github.com/gofiber/contrib/websocket"
 	"laurensdrop/internal/core/data"
-	"laurensdrop/internal/core/utils"
 	"laurensdrop/internal/ports"
-	"log"
 )
 
 type MessageService struct {
-	users ports.UserService
-	conn  *websocket.Conn
+	users    ports.UserService
+	notifier ports.MessageNotifier
 }
 
-func NewMessageService(us ports.UserService, conn *websocket.Conn) *MessageService {
+func NewMessageService(us ports.UserService, notifier ports.MessageNotifier) *MessageService {
 	return &MessageService{
-		users: us,
-		conn:  conn,
+		users:    us,
+		notifier: notifier,
 	}
 }
 
 func (m *MessageService) Read() (*data.Message, error) {
-	_, raw, err := m.conn.ReadMessage()
-	if err != nil {
-		return nil, err
-	}
-
-	message := &data.Message{}
-	err = utils.MapJsonToStruct(raw, message)
-	if err != nil {
-		return nil, err
-	}
-
-	return message, nil
+	return m.notifier.Read()
 }
 
 func (m *MessageService) Send(msg *data.Message) error {
-	err := m.validateMessageOrigin(msg)
-	if err != nil {
-		log.Println("ERR", err)
-		return err
-	}
-	return m.SendJSON(msg)
+	return m.notifier.Send(msg)
 }
 
 func (m *MessageService) SendJSON(json interface{}) error {
-	err := m.conn.Conn.WriteJSON(json)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *MessageService) validateMessageOrigin(msg *data.Message) error {
-	if len(msg.From) < 1 {
-		return nil
-	}
-
-	user, err := m.users.GetUserByConn(m.conn)
-	if err != nil {
-		return err
-	}
-
-	if user.Username != msg.From && len(msg.From) >= 1 {
-		return errors.New("from message spoofed")
-	}
-
-	return nil
+	return m.notifier.SendJSON(json)
 }
 
 func (m *MessageService) Broadcast(msg *data.Message) error {
-	err := m.validateMessageOrigin(msg)
-	if err != nil {
-		log.Println("ERR", err)
-		return err
-	}
-
 	users, err := m.users.GetAllUsers()
 	if err != nil {
 		return err
 	}
-
 	for _, user := range users {
-		if user.Username == msg.From {
-			return nil
-		}
-
-		err = user.Connection.Conn.WriteJSON(msg)
+		err := m.notifier.SendTargeted(msg, user)
 		if err != nil {
 			return err
 		}
-
-		return nil
 	}
 	return nil
 }
 
 func (m *MessageService) InvalidMessage(msg interface{}) error {
-	return m.conn.WriteJSON(msg)
+	return m.notifier.InvalidMessage(msg)
 }
