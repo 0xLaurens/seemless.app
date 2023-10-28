@@ -113,13 +113,14 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 
 func (wh *WebsocketHandler) wsDefer(user *data.User) {
 	log.Println("DBG", "defer")
-	err := wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerLeft, User: user, From: user.Username})
+	_, err := wh.us.RemoveUser(user.Username)
 	if err != nil {
-		log.Println("ERR", err)
 		return
 	}
-	_, err = wh.us.RemoveUser(user.Username)
+
+	err = wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerLeft, User: user, From: user.Username})
 	if err != nil {
+		log.Println("ERR", err)
 		return
 	}
 }
