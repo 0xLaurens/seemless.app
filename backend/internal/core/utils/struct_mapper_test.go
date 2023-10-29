@@ -2,17 +2,17 @@ package utils
 
 import (
 	"encoding/json"
-	"laurensdrop/data"
+	"laurensdrop/internal/core/data"
 	"testing"
 )
 
 func TestValidJsonMapsToObject(t *testing.T) {
-	msg, _ := json.Marshal(data.Request{
+	msg, _ := json.Marshal(data.Message{
 		Type: "PeerJoin",
 		From: "John",
 	})
 
-	req := &data.Request{}
+	req := &data.Message{}
 
 	err := MapJsonToStruct(msg, req)
 	if err != nil {
@@ -25,11 +25,11 @@ func TestValidJsonMapsToObject(t *testing.T) {
 }
 
 func TestValidJsonMissingFieldsWorks(t *testing.T) {
-	msg, _ := json.Marshal(data.Request{
+	msg, _ := json.Marshal(data.Message{
 		Type: "PeerJoin",
 	})
 
-	req := &data.Request{}
+	req := &data.Message{}
 
 	err := MapJsonToStruct(msg, req)
 	if err != nil {
@@ -47,7 +47,7 @@ func TestValidJsonMissingFieldsWorks(t *testing.T) {
 func TestInvalidJsonThrowsErr(t *testing.T) {
 	msg, _ := json.Marshal("type: 'PeerLeave'")
 
-	req := &data.Request{}
+	req := &data.Message{}
 
 	err := MapJsonToStruct(msg, req)
 	if err == nil {

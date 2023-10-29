@@ -1,17 +1,18 @@
-package store
+package repo
 
 import (
 	"github.com/stretchr/testify/assert"
-	"laurensdrop/data"
+	"laurensdrop/internal/core/data"
+	"laurensdrop/internal/ports"
 	"testing"
 )
 
 // setup
-func SetupUserStore() UserStore {
-	return NewUserStoreInMemory()
+func SetupUserStore() ports.UserRepo {
+	return NewUserRepoInMemory()
 }
 
-func SeedData(s UserStore) (int, error) {
+func SeedData(s ports.UserRepo) (int, error) {
 	users := []*data.User{
 		data.CreateUser("Jane", "Android"),
 		data.CreateUser("John", "Iphone"),

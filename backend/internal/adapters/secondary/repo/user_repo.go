@@ -1,23 +1,23 @@
-package store
+package repo
 
 import (
 	"fmt"
-	"laurensdrop/data"
+	"laurensdrop/internal/core/data"
 )
 
-type UserStoreInMemory struct {
+type UserRepoInMemory struct {
 	Users map[string]*data.User    //username -> user
 	Conns map[data.Conn]*data.User //ws conn -> user
 }
 
-func NewUserStoreInMemory() *UserStoreInMemory {
-	return &UserStoreInMemory{
+func NewUserRepoInMemory() *UserRepoInMemory {
+	return &UserRepoInMemory{
 		Users: map[string]*data.User{},
 		Conns: map[data.Conn]*data.User{},
 	}
 }
 
-func (s *UserStoreInMemory) AddUser(u *data.User) (*data.User, error) {
+func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 	_, exists := s.Users[u.Username]
 	if exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.DuplicateUsername))
@@ -28,7 +28,7 @@ func (s *UserStoreInMemory) AddUser(u *data.User) (*data.User, error) {
 	return u, nil
 }
 
-func (s *UserStoreInMemory) GetUserByName(username string) (*data.User, error) {
+func (s *UserRepoInMemory) GetUserByName(username string) (*data.User, error) {
 	user, exists := s.Users[username]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
@@ -37,7 +37,7 @@ func (s *UserStoreInMemory) GetUserByName(username string) (*data.User, error) {
 	return user, nil
 }
 
-func (s *UserStoreInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
+func (s *UserRepoInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
 	user, exists := s.Conns[conn]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
@@ -46,7 +46,7 @@ func (s *UserStoreInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
 	return user, nil
 }
 
-func (s *UserStoreInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
+func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
 	user, exists := s.Users[username]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
@@ -65,7 +65,7 @@ func (s *UserStoreInMemory) UpdateUser(username string, userDTO *data.User) (*da
 	return user, nil
 }
 
-func (s *UserStoreInMemory) RemoveUser(username string) ([]*data.User, error) {
+func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
 	user, exists := s.Users[username]
 	if !exists {
 		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
@@ -77,7 +77,7 @@ func (s *UserStoreInMemory) RemoveUser(username string) ([]*data.User, error) {
 	return s.GetAllUsers()
 }
 
-func (s *UserStoreInMemory) GetAllUsers() ([]*data.User, error) {
+func (s *UserRepoInMemory) GetAllUsers() ([]*data.User, error) {
 	users := make([]*data.User, len(s.Users))
 
 	i := 0
