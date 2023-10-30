@@ -52,7 +52,7 @@ function selectNickname() {
         </p>
       </div>
       <div class="w-full">
-        <form @submit="selectNickname" @submit.prevent>
+        <form @submit="selectNickname" @submit.prevent="username.length > 16">
           <label class="text-xl md:text-2xl font-black text-black dark:text-white capitalize mb-5 hind break-words">
             Nickname<span v-if="username" class="hind font-black normal-case">: {{ username }}</span>
           </label>
@@ -62,9 +62,9 @@ function selectNickname() {
               :value="username"
               @input="cleanNickname(($event.target as HTMLInputElement).value)"
               placeholder="Your cool username"
-              class="input input-primary w-full mb-5 font-regular hind"
+              class="input input-accent w-full mb-5 font-regular hind"
           />
-          <button :disabled="!username" class="btn btn-primary w-full">Select Nickname</button>
+          <button :disabled="!username || username.length > 16" class="btn btn-accent w-full">Select Nickname</button>
         </form>
       </div>
     </div>
