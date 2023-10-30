@@ -3,9 +3,12 @@ import {useUserStore} from '@/stores/user'
 import {ref} from 'vue'
 import router from '@/router'
 import BackIcon from "@/components/icons/BackIcon.vue";
+import {useToastStore} from "@/stores/toast";
+import {ToastType} from "@/models/toast";
 
 const user = useUserStore()
 const username = ref(user.getUsername())
+const toast = useToastStore()
 
 function cleanNickname(name: string) {
   name = name.trimStart()
@@ -15,6 +18,11 @@ function cleanNickname(name: string) {
 
 function selectNickname() {
   if (!username.value) {
+    return
+  }
+
+  if (username.value.length > 10) {
+    toast.notify({message: "Max length of username exceeded", type: ToastType.Warning})
     return
   }
 
@@ -44,12 +52,13 @@ function selectNickname() {
         </p>
       </div>
       <div class="w-full">
-        <form @submit="selectNickname">
+        <form @submit="selectNickname" @submit.prevent>
           <label class="text-xl md:text-2xl font-black text-black dark:text-white capitalize mb-5 hind break-words">
             Nickname<span v-if="username" class="hind font-black normal-case">: {{ username }}</span>
           </label>
           <input
               type="text"
+              maxlength="16"
               :value="username"
               @input="cleanNickname(($event.target as HTMLInputElement).value)"
               placeholder="Your cool username"
