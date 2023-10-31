@@ -23,7 +23,7 @@ function setFiles(event: Event) {
       <input
           v-on:change="setFiles"
           type="file"
-          class="file-input file-input-bordered file-input-primary w-full md:w-auto max-w-md md:mr-10 mb-3 md:mb-0"
+          class="file-input file-input-bordered file-input-accent w-full md:w-auto max-w-md md:mr-10 mb-3 md:mb-0"
       />
       <button :disabled="files.length < 1" type="submit" class="btn w-full md:btn-wide btn-primary">Send</button>
     </form>

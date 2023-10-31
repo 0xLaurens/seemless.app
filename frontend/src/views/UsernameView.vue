@@ -34,7 +34,7 @@ function selectNickname() {
 <template>
   <section class="flex h-screen items-center justify-center py-10">
     <div
-        class="flex flex-col items-center max-w-3xl justify-between h-full md:h-auto md:justify-start w-full px-3 md:px-0">
+        class="flex flex-col items-center max-w-3xl justify-between h-full md:h-auto md:justify-start w-full px-3 md:px-6">
       <div class="flex flex-row justify-between items-center w-full mb-10">
         <div>
           <router-link to="../" class="btn btn-md md:btn-sm btn-ghost font-black">
