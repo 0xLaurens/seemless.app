@@ -20,11 +20,11 @@ watch(
 )
 </script>
 <template>
-  <div class="flex justify-center align-middle space-x-3">
+  <div class="flex justify-center align-middle items-center space-x-3">
     <disconnected-icon v-if="!hasConnection"/>
     <connected-icon v-if="hasConnection"/>
-    <p class="text-2xl hind">
-      {{ hasConnection ? `Connected as: ${user.getUsername()}` : 'Offline' }}
+    <p class="text-2xl hind break-all">
+      {{ hasConnection ? `Connected as: ${user.getUsername()}` : 'Connection Offline' }}
     </p>
   </div>
 </template>

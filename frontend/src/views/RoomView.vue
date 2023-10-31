@@ -27,46 +27,41 @@ onUnmounted(() => {
 
 <template>
   <confirm-download/>
-  <div class="flex justify-start md:justify-center">
-    <div class="max-w-4xl align-middle justify-center px-4 w-full">
-      <section class="flex flex-col h-screen justify-between">
-        <div class="relative pt-10">
-          <div class="flex flex-row justify-between items-center w-full">
-            <div>
-              <router-link to="../nick" class="btn btn-md md:btn-lg btn-ghost font-black">
-                <back-icon/>
-              </router-link>
-            </div>
-            <div>
-              <h1 class="text-2xl lg:text-4xl font-black text-center text-black dark:text-white capitalize">
-                Room: {{ id }}
-              </h1>
-            </div>
-            <div>
-              <button class="btn btn-md md:btn-lg btn-accent btn-outline">
-                <qr-icon/>
-              </button>
-            </div>
-          </div>
+  <section class="flex h-screen items-center justify-center py-10">
+    <div class="flex flex-col items-center max-w-3xl w-full h-full justify-between px-3 md:px-0">
+      <div class="flex flex-row justify-between items-center w-full">
+        <div>
+          <router-link to="../nick" class="btn btn-md md:btn-lg btn-ghost font-black">
+            <back-icon/>
+          </router-link>
         </div>
-        <div class="users-box flow-root">
-          <div class="flex flex-wrap justify-center align-middle">
-            <div :key="u.username" v-for="u in user.users">
-              <user-avatar :user="u"/>
-            </div>
-            <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
-          </div>
+        <div>
+          <h1 class="text-2xl lg:text-4xl font-black text-center text-black dark:text-white capitalize">
+            Room: {{ id }}
+          </h1>
         </div>
-
-        <div class="pb-10">
-          <div class="flex justify-center">
-            <file-input/>
-          </div>
-          <div>
-            <ws-connection/>
-          </div>
+        <div>
+          <button class="btn btn-md md:btn-lg btn-accent btn-outline">
+            <qr-icon/>
+          </button>
         </div>
-      </section>
+      </div>
+      <div class="users-box flow-root">
+        <div class="flex flex-wrap justify-center align-middle">
+          <div :key="u.username" v-for="u in user.users">
+            <user-avatar :user="u"/>
+          </div>
+          <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-center">
+          <file-input/>
+        </div>
+        <div>
+          <ws-connection/>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 </template>
