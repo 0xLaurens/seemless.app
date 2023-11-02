@@ -14,15 +14,18 @@ function setFiles(event: Event) {
   for (const file of target.files) {
     files.value.push(file)
   }
+
+  console.log(files.value)
 }
 </script>
 
 <template>
   <div class="flex pb-6">
-    <form @submit.prevent="files.length < 1" @submit="fileStore.sendFiles(files)">
+    <form @submit.prevent="files.length < 1" @submit="fileStore.sendFilesOffer(files)">
       <input
           v-on:change="setFiles"
           type="file"
+          multiple
           class="file-input file-input-bordered file-input-accent w-full md:w-auto max-w-md md:mr-10 mb-3 md:mb-0"
       />
       <button :disabled="files.length < 1" type="submit" class="btn w-full md:btn-wide btn-primary">Send</button>
