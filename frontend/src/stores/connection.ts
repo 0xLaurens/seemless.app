@@ -62,6 +62,21 @@ export const useConnStore = defineStore('conn', () => {
                 console.log(message)
                 download.addOffer(message)
             }
+
+            if (message.status == FileSetup.Accept) {
+                console.log(message.user, message.status)
+                console.log(message.files)
+                const files = file.getOfferedFiles(message.id)
+                if (files == undefined) {
+                    console.log("something went wrong!")
+                    return
+                }
+                await file.sendFiles(files)
+            }
+
+            if (message.status == FileSetup.Deny) {
+                console.log(message.user, message.status)
+            }
         }
         connection.dc.onclose = () => {
             toast.notify({
