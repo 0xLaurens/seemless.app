@@ -3,11 +3,22 @@ export interface FileMessage {
     name: string
     mime: string
     size: number
+}
+
+export interface FileOffer {
+    status: FileSetup
     from: string
+    files: FileMessage[]
+}
+
+export enum FileSetup {
+    Offer = 'Offer',
+    Accept = 'Accept',
+    Deny = 'Deny',
 }
 
 export enum FileStatus {
-    Offer = 'Offer',
+    Init = 'Init',
     Complete = 'Complete',
     Busy = 'Busy'
 }
