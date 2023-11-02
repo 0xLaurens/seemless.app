@@ -1,6 +1,5 @@
-import type {FileMessage} from '@/models/file'
-import {FileStatus} from '@/models/file'
-import type {Download} from '@/models/download'
+import type {FileMessage, FileOffer} from '@/models/file'
+import {FileSetup, FileStatus} from '@/models/file'
 import type {Ref} from 'vue'
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
@@ -20,14 +19,12 @@ export const useFileStore = defineStore('file', () => {
     const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
     const accSize = ref(0)
     const filesize = 51346
-    console.log(StreamSaver.mitm)
     StreamSaver.mitm = `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0`
 
-    async function buildFile(file: FileMessage | undefined, chunk: ArrayBuffer | undefined) {
-        if (!chunk && !file) {
+    async function buildFile(chunk: ArrayBuffer) {
+        if (chunk) {
             return;
         }
-        console.log(accSize.value)
 
         if (!stream.value) {
             console.log("stream.value")
@@ -36,10 +33,7 @@ export const useFileStore = defineStore('file', () => {
             console.log(writer.value)
         }
 
-        if (chunk == undefined) return
-        console.log(chunk)
         const buffer = new Uint8Array(chunk)
-        console.log(buffer)
         await writer.value?.write(buffer)
 
         accSize.value += buffer.length
@@ -51,6 +45,46 @@ export const useFileStore = defineStore('file', () => {
             writer.value = undefined
             accSize.value = 0
         }
+    }
+
+    function filesToFileMessage(files: File[]): FileMessage[] {
+        const messages: FileMessage[] = []
+        for (const file of files) {
+            const msg: FileMessage = {
+                mime: file.type, name: file.name, size: file.size, status: FileStatus.Init
+            }
+            messages.push(msg)
+        }
+        return messages
+    }
+
+    async function sendFilesOffer(files: File[]) {
+        const connections = conn.GetConnections()
+        if (connections === undefined) return
+        if (connections.length < 1) {
+            toast.notify({message: 'Not connected to anyone', type: ToastType.Warning})
+            return
+        }
+
+        const fileMessages = filesToFileMessage(files)
+
+        const offer: FileOffer = {
+            status: FileSetup.Offer,
+            files: fileMessages,
+            from: user.getUsername()
+        }
+
+        for (const connection of connections) {
+            connection.dc?.send(JSON.stringify(offer))
+        }
+    }
+
+    function respondToFileOffer(offer: FileOffer, status: FileSetup) {
+        const connection = conn.GetUserConnection(offer.from)
+        if (!connection) return
+
+        offer.status = status
+        connection.dc?.send(JSON.stringify(offer))
     }
 
     async function sendFiles(files: File[]) {
@@ -72,11 +106,10 @@ export const useFileStore = defineStore('file', () => {
         if (connections === undefined) return
 
         const pl: FileMessage = {
+            status: FileStatus.Busy,
             mime: file.type,
             name: file.name,
             size: file.size,
-            status: FileStatus.Busy,
-            from: user.getUsername()
         }
         const stream = file.stream()
         const reader = stream.getReader()
@@ -85,7 +118,6 @@ export const useFileStore = defineStore('file', () => {
             const {done, value} = await reader.read();
 
             if (done) {
-                pl.status = FileStatus.Complete
                 for (const connection of connections) {
                     connection.dc?.send(JSON.stringify(pl))
                 }
@@ -106,6 +138,8 @@ export const useFileStore = defineStore('file', () => {
     return {
         sendFile,
         sendFiles,
-        buildFile
+        buildFile,
+        respondToFileOffer,
+        sendFilesOffer,
     }
 })
