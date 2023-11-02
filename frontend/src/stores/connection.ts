@@ -11,9 +11,12 @@ import type {Message} from '@/models/message'
 import {useWebsocketStore} from '@/stores/websocket'
 import {isJSON} from '@/utils/json'
 import {useFileStore} from '@/stores/file'
+import {FileSetup, FileStatus} from "@/models/file";
+import {useDownloadStore} from "@/stores/download";
 
 export const useConnStore = defineStore('conn', () => {
     const user = useUserStore()
+    const download = useDownloadStore()
     const toast = useToastStore()
     const ws = useWebsocketStore()
     const file = useFileStore()
@@ -45,15 +48,20 @@ export const useConnStore = defineStore('conn', () => {
         if (!connection.dc) return
         connection.dc.onmessage = async (ev) => {
             if (typeof ev.data === 'object') {
-                await file.buildFile(undefined, ev.data)
+                await file.buildFile(ev.data)
                 return
             }
 
             if (!isJSON(ev.data)) return
+            const message = JSON.parse(ev.data)
+            if (message.status == FileStatus.Complete) {
+                console.log(FileStatus.Complete)
+            }
 
-            const fileJson = JSON.parse(ev.data)
-
-            await file.buildFile(fileJson, undefined)
+            if (message.status == FileSetup.Offer) {
+                console.log(message)
+                download.addOffer(message)
+            }
         }
         connection.dc.onclose = () => {
             toast.notify({
