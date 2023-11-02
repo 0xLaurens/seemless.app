@@ -6,6 +6,7 @@ export interface FileMessage {
 }
 
 export interface FileOffer {
+    id: string
     status: FileSetup
     from: string
     files: FileMessage[]
