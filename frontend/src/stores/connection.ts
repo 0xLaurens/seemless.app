@@ -64,14 +64,12 @@ export const useConnStore = defineStore('conn', () => {
             }
 
             if (message.status == FileSetup.Accept) {
-                console.log(message.user, message.status)
-                console.log(message.files)
                 const files = file.getOfferedFiles(message.id)
                 if (files == undefined) {
                     console.log("something went wrong!")
                     return
                 }
-                await file.sendFiles(files)
+                await file.sendFiles(files, message.from)
             }
 
             if (message.status == FileSetup.Deny) {
