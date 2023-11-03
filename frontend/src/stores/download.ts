@@ -45,12 +45,13 @@ export const useDownloadStore = defineStore('download', () => {
     }
 
     function removeOffer(offer: FileOffer | undefined) {
-        offers.value.filter((o) => o === offer)
+        if (!offer) return
+        offers.value = offers.value.filter((o) => o.id !== offer.id)
         setLatestOffer()
     }
 
     function setLatestOffer() {
-        activeOffer.value = offers.value.length > 1
+        activeOffer.value = offers.value.length < 1
             ? undefined
             : offers.value[0]
         console.log(activeOffer.value)
