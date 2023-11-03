@@ -9,6 +9,7 @@ import {useUserStore} from '@/stores/user'
 import {useToastStore} from '@/stores/toast'
 import {ToastType} from '@/models/toast'
 import StreamSaver from "streamsaver";
+import type {Connection} from "@/models/connection";
 
 export const useFileStore = defineStore('file', () => {
     const conn = useConnStore()
@@ -94,27 +95,24 @@ export const useFileStore = defineStore('file', () => {
         if (!connection) return
 
         offer.status = status
+        offer.from = user.getUsername()
+
         connection.dc?.send(JSON.stringify(offer))
     }
 
-    async function sendFiles(files: File[]) {
-        const connections = conn.GetConnections()
-        if (connections === undefined) return
-
-        if (connections.length < 1) {
-            toast.notify({message: 'Not connected to anyone', type: ToastType.Warning})
+    async function sendFiles(files: File[], username: string) {
+        const connection = conn.GetUserConnection(username)
+        if (!connection) {
+            toast.notify({message: `No longer connected to ${username}`, type: ToastType.Warning})
             return
         }
 
         for (const file of files) {
-            await sendFile(file)
+            await sendFile(file, connection)
         }
     }
 
-    async function sendFile(file: File) {
-        const connections = conn.GetConnections()
-        if (connections === undefined) return
-
+    async function sendFile(file: File, connection: Connection) {
         const pl: FileMessage = {
             status: FileStatus.Busy,
             mime: file.type,
@@ -128,17 +126,11 @@ export const useFileStore = defineStore('file', () => {
             const {done, value} = await reader.read();
 
             if (done) {
-                for (const connection of connections) {
-                    connection.dc?.send(JSON.stringify(pl))
-                }
+                connection.dc?.send(JSON.stringify(pl))
                 return;
             }
 
-            for (const connection of connections) {
-                console.log(value)
-                connection.dc?.send(value)
-            }
-
+            connection.dc?.send(value)
             await readChunk()
         }
 
