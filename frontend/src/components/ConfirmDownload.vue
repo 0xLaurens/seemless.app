@@ -7,11 +7,14 @@
   >
     <div @click.stop class="card w-96 bg-neutral text-neutral-content">
       <div class="card-body items-center text-center">
-        <h2 class="card-title text-black dark:text-white font-bold text-2xl pb-6">
-          {{ download.activeOffer?.from || 'Username' }} wants to send you {{ download.activeOffer?.files.length }}
+        <h2 class="card-title text-black text-left dark:text-white font-bold text-2xl">
+          {{ download.activeOffer?.from || 'Username' }}
+        </h2>
+        <h2 class="card-title text-black dark:text-white font-medium text-xl">
+          would like to send you {{ download.activeOffer?.files.length }}
           file(s)
         </h2>
-        <div class="w-full space-y-1 py-3 h-42 overflow-y-scroll">
+        <div class="w-full space-y-1 max-h-60 overflow-y-scroll my-3">
           <file-preview :file="file" :key="file.name" v-for="file in download.activeOffer?.files"/>
         </div>
         <img
