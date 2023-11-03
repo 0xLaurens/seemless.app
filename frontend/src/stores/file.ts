@@ -19,13 +19,22 @@ export const useFileStore = defineStore('file', () => {
     const stream: Ref<WritableStream<Uint8Array> | undefined> = ref(undefined)
     const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
     const accSize = ref(0)
-    const filesize = 51346
+    const currentFile: Ref<FileMessage | undefined> = ref(undefined)
     StreamSaver.mitm = `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0`
 
+
+    function setCurrentFile(file: FileMessage) {
+        currentFile.value = file
+    }
+
     async function buildFile(chunk: ArrayBuffer) {
+        if (!currentFile.value) {
+            console.warn("current file not setup")
+            return
+        }
         if (!stream.value) {
             console.log("stream.value")
-            stream.value = StreamSaver.createWriteStream("test3.jpg", {size: filesize})
+            stream.value = StreamSaver.createWriteStream(currentFile.value.name, {size: currentFile.value.size})
             writer.value = stream.value.getWriter()
             console.log(writer.value)
         }
@@ -35,7 +44,7 @@ export const useFileStore = defineStore('file', () => {
 
         accSize.value += buffer.length
 
-        if (accSize.value == filesize) {
+        if (accSize.value == currentFile.value.size) {
             console.log("close writer", accSize.value)
             await writer.value?.close()
             stream.value = undefined
@@ -100,21 +109,26 @@ export const useFileStore = defineStore('file', () => {
         connection.dc?.send(JSON.stringify(offer))
     }
 
-    async function sendFiles(files: File[], username: string) {
+    // async function sendFiles(files: File[], username: string) {
+    //     const connection = conn.GetUserConnection(username)
+    //     if (!connection) {
+    //         toast.notify({message: `No longer connected to ${username}`, type: ToastType.Warning})
+    //         return
+    //     }
+    //
+    //     for (const file of files) {
+    //         await sendFile(file, connection)
+    //     }
+    // }
+
+    async function sendFile(file: File, username: string) {
         const connection = conn.GetUserConnection(username)
         if (!connection) {
             toast.notify({message: `No longer connected to ${username}`, type: ToastType.Warning})
             return
         }
-
-        for (const file of files) {
-            await sendFile(file, connection)
-        }
-    }
-
-    async function sendFile(file: File, connection: Connection) {
         const pl: FileMessage = {
-            status: FileStatus.Busy,
+            status: FileStatus.Init,
             mime: file.type,
             name: file.name,
             size: file.size,
@@ -122,10 +136,12 @@ export const useFileStore = defineStore('file', () => {
         const stream = file.stream()
         const reader = stream.getReader()
 
+        connection.dc?.send(JSON.stringify(pl))
         const readChunk = async () => {
             const {done, value} = await reader.read();
 
             if (done) {
+                pl.status = FileStatus.Complete
                 connection.dc?.send(JSON.stringify(pl))
                 return;
             }
@@ -138,11 +154,11 @@ export const useFileStore = defineStore('file', () => {
     }
 
     return {
+        setCurrentFile,
         addOfferedFiles,
         getOfferedFiles,
         removeOfferedFile,
         sendFile,
-        sendFiles,
         buildFile,
         respondToFileOffer,
         sendFilesOffer,
