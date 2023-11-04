@@ -34,14 +34,14 @@ export const useDownloadStore = defineStore('download', () => {
         close()
         if (!offer) return
         removeOffer(offer)
-        file.respondToFileOffer(offer, FileSetup.Accept)
+        file.respondToFileOffer(offer, FileSetup.AcceptOffer)
     }
 
     function denyOffer(offer: FileOffer | undefined) {
         close()
         if (!offer) return
         removeOffer(offer)
-        file.respondToFileOffer(offer, FileSetup.Deny)
+        file.respondToFileOffer(offer, FileSetup.DenyOffer)
     }
 
     function removeOffer(offer: FileOffer | undefined) {
