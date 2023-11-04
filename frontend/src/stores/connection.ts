@@ -11,7 +11,7 @@ import type {Message} from '@/models/message'
 import {useWebsocketStore} from '@/stores/websocket'
 import {isJSON} from '@/utils/json'
 import {useFileStore} from '@/stores/file'
-import {FileSetup, FileStatus} from "@/models/file";
+import {FileSetup} from "@/models/file";
 import {useDownloadStore} from "@/stores/download";
 
 export const useConnStore = defineStore('conn', () => {
@@ -53,27 +53,40 @@ export const useConnStore = defineStore('conn', () => {
             }
 
             if (!isJSON(ev.data)) return
-            const message = JSON.parse(ev.data)
-            if (message.status == FileStatus.Complete) {
-                console.log(FileStatus.Complete)
-            }
+            const offer = JSON.parse(ev.data)
+            switch (offer.status) {
+                case FileSetup.RequestNext: {
+                    const files = file.getOfferedFiles(offer.id)
+                    if (files == undefined) return
 
-            if (message.status == FileSetup.Offer) {
-                console.log(message)
-                download.addOffer(message)
-            }
-
-            if (message.status == FileSetup.Accept) {
-                const files = file.getOfferedFiles(message.id)
-                if (files == undefined) {
-                    console.log("something went wrong!")
-                    return
+                    if (offer.current < files.length) {
+                        await file.sendFile(files[offer.current], offer)
+                    }
+                    break
                 }
-                await file.sendFiles(files, message.from)
-            }
+                case FileSetup.LatestOffer: {
+                    file.setCurrentOffer(offer)
+                    break
+                }
+                case FileSetup.Offer: {
+                    download.addOffer(offer)
+                    break
+                }
+                case FileSetup.AcceptOffer: {
+                    const files = file.getOfferedFiles(offer.id)
+                    if (files == undefined) {
+                        console.log("something went wrong!")
+                        return
+                    }
 
-            if (message.status == FileSetup.Deny) {
-                console.log(message.user, message.status)
+                    await file.sendFile(files[0], offer)
+                    break
+                }
+                case FileSetup.DenyOffer: {
+                    console.log("offer was denied :(")
+                }
+
+
             }
         }
         connection.dc.onclose = () => {
