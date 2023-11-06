@@ -7,12 +7,16 @@
   >
     <div @click.stop class="card w-96 bg-neutral text-neutral-content">
       <div class="card-body items-center text-center">
-        <h2 class="card-title text-black dark:text-white font-black text-2xl pb-3">
-          {{ download.activeDownload?.from || 'Username' }} would like to send you
+        <h2 class="card-title text-black text-left dark:text-white font-bold text-2xl">
+          {{ download.activeOffer?.from || 'Username' }}
         </h2>
-        <p class="text-2xl hind pb-3 break-all">
-          {{ download.activeDownload?.file.name || 'Filename' }}
-        </p>
+        <h2 class="card-title text-black dark:text-white font-medium text-xl">
+          would like to send you {{ download.activeOffer?.files.length }}
+          file(s)
+        </h2>
+        <div class="w-full space-y-1 max-h-60 overflow-y-scroll my-3">
+          <file-preview :file="file" :key="file.name" v-for="file in download.activeOffer?.files"/>
+        </div>
         <img
             class="pb-6 h-32 w-auto"
             v-if="download.activeDownload?.mime.startsWith('image')"
@@ -20,12 +24,12 @@
             alt="preview"
         />
         <div class="card-actions justify-end">
-          <button class="btn btn-outline" @click="download.removeDownload(download.activeDownload)">
+          <button class="btn btn-outline" @click="download.denyOffer(download.activeOffer)">
             Deny
           </button>
           <a
-              class="btn btn-primary"
-              @click="download.removeDownload(download.activeDownload)"
+              class="btn btn-accent"
+              @click="download.acceptOffer(download.activeOffer)"
               :href="download.url"
               download
           >
@@ -39,6 +43,7 @@
 
 <script setup lang="ts">
 import {useDownloadStore} from '@/stores/download'
+import FilePreview from "@/components/FilePreview.vue";
 
 const download = useDownloadStore()
 </script>
