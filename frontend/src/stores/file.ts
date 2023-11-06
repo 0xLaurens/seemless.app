@@ -1,87 +1,172 @@
-import type { FileMessage } from '@/models/file'
-import { FileStatus } from '@/models/file'
-import type { Download } from '@/models/download'
-import type { Ref } from 'vue'
-import { ref } from 'vue'
-import { defineStore } from 'pinia'
-import { useDownloadStore } from '@/stores/download'
-import { useConnStore } from '@/stores/connection'
-import { useUserStore } from '@/stores/user'
-import { useToastStore } from '@/stores/toast'
-import { ToastType } from '@/models/toast'
+import type {FileMessage, FileOffer} from '@/models/file'
+import {FileSetup, FileStatus} from '@/models/file'
+import {v4 as uuidv4} from 'uuid';
+import type {Ref} from 'vue'
+import {ref} from 'vue'
+import {defineStore} from 'pinia'
+import {useConnStore} from '@/stores/connection'
+import {useUserStore} from '@/stores/user'
+import {useToastStore} from '@/stores/toast'
+import {ToastType} from '@/models/toast'
+import StreamSaver from "streamsaver";
 
 export const useFileStore = defineStore('file', () => {
-  const downloadStore = useDownloadStore()
-  const conn = useConnStore()
-  const user = useUserStore()
-  const toast = useToastStore()
-  const CHUNK_SIZE = 65536 //64 KiB
+    const conn = useConnStore()
+    const user = useUserStore()
+    const toast = useToastStore()
+    const offeredFiles: Ref<Map<string, File[]>> = ref(new Map())
+    const stream: Ref<WritableStream<Uint8Array> | undefined> = ref(undefined)
+    const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
+    const accSize = ref(0)
+    const currentOffer: Ref<FileOffer | undefined> = ref(undefined)
+    StreamSaver.mitm = `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0`
 
-  const buf: Ref<string[]> = ref([])
 
-  function buildFile(file: FileMessage | undefined, chunk: string | undefined) {
-    if (!chunk && !file) {
-      return
+    function setCurrentOffer(offer: FileOffer) {
+        currentOffer.value = offer
     }
 
-    if (file?.status === FileStatus.Complete) {
-      console.log('TRANSFER COMPLETE')
-      const blob = new Blob(buf.value, { type: file.name })
-      const load: Download = { from: file.from, file: new File([blob], file.name), mime: file.mime }
-      downloadStore.addDownload(load)
-      console.log(load)
-      buf.value = []
-      return
+    async function buildFile(chunk: ArrayBuffer) {
+        if (!currentOffer.value) {
+            console.warn("current file not setup")
+            return
+        }
+
+        const file = currentOffer.value.files[currentOffer.value.current]
+
+        if (!stream.value) {
+            console.log("stream.value")
+            stream.value = StreamSaver.createWriteStream(file.name, {size: file.size})
+            writer.value = stream.value.getWriter()
+            console.log(writer.value)
+        }
+
+        const buffer = new Uint8Array(chunk)
+        await writer.value?.write(buffer)
+
+        accSize.value += buffer.length
+
+        if (accSize.value == file.size) {
+            console.log("close writer", accSize.value)
+            await writer.value?.close()
+
+            console.log(currentOffer.value)
+            const connection = conn.GetUserConnection(currentOffer.value.from)
+            if (!connection) return
+
+            file.status = FileStatus.Complete
+
+            const offer = currentOffer.value;
+            offer.files[currentOffer.value.current] = file
+            offer.from = user.getUsername()
+            console.log("RequestNext", offer.current, offer.files.length, offer.current + 1 < offer.files.length)
+            if (offer.current + 1 < offer.files.length) {
+                offer.current += 1
+                offer.status = FileSetup.RequestNext
+            }
+            currentOffer.value = offer
+
+            connection.dc?.send(JSON.stringify(offer))
+
+            stream.value = undefined
+            writer.value = undefined
+            accSize.value = 0
+        }
     }
 
-    if (chunk) {
-      buf.value.push(chunk)
-    }
-  }
-
-  async function sendFiles(files: File[]) {
-    const connections = conn.GetConnections()
-    if (connections === undefined) return
-
-    if (connections.length < 1) {
-      toast.notify({ message: 'Not connected to anyone', type: ToastType.Warning })
-      return
+    function addOfferedFiles(id: string, files: File[]) {
+        offeredFiles.value.set(id, files)
     }
 
-    for (const file of files) {
-      await sendFile(file)
+    function getOfferedFiles(id: string): File[] | undefined {
+        return offeredFiles.value.get(id)
     }
-  }
 
-  async function sendFile(file: File) {
-    const connections = conn.GetConnections()
-    if (connections === undefined) return
-
-    const pl: FileMessage = {
-      mime: file.type,
-      name: file.name,
-      status: FileStatus.Busy,
-      from: user.getUsername()
+    function removeOfferedFile(id: string) {
+        offeredFiles.value.delete(id)
     }
-    let buf = await file.arrayBuffer()
-    while (buf.byteLength) {
-      const chunk = buf.slice(0, CHUNK_SIZE)
-      buf = buf.slice(CHUNK_SIZE, buf.byteLength)
 
-      for (const connection of connections) {
-        connection.dc?.send(chunk)
-      }
+    function filesToFileMessage(files: File[]): FileMessage[] {
+        const messages: FileMessage[] = []
+        for (const file of files) {
+            const msg: FileMessage = {
+                mime: file.type,
+                name: file.name,
+                size: file.size,
+                status: FileStatus.Init,
+            }
+            messages.push(msg)
+        }
+        return messages
     }
-    pl.status = FileStatus.Complete
 
-    for (const connection of connections) {
-      connection.dc?.send(JSON.stringify(pl))
+    async function sendFilesOffer(files: File[]) {
+        const connections = conn.GetConnections()
+        if (connections === undefined) return
+        if (connections.length < 1) {
+            toast.notify({message: 'Not connected to anyone', type: ToastType.Warning})
+            return
+        }
+
+        const fileMessages = filesToFileMessage(files);
+
+        const offer: FileOffer = {
+            id: uuidv4(),
+            status: FileSetup.Offer,
+            files: fileMessages,
+            current: 0,
+            from: user.getUsername()
+        }
+
+        addOfferedFiles(offer.id, files)
+
+        for (const connection of connections) {
+            connection.dc?.send(JSON.stringify(offer))
+        }
     }
-  }
 
-  return {
-    sendFile,
-    sendFiles,
-    buildFile
-  }
+    function respondToFileOffer(offer: FileOffer, status: FileSetup) {
+        const connection = conn.GetUserConnection(offer.from)
+        if (!connection) return
+
+        offer.status = status
+        offer.from = user.getUsername()
+
+        connection.dc?.send(JSON.stringify(offer))
+    }
+
+    async function sendFile(file: File, offer: FileOffer) {
+        const connection = conn.GetUserConnection(offer.from)
+        console.log("send File", offer)
+        if (!connection) {
+            toast.notify({message: `No longer connected to ${offer.from}`, type: ToastType.Warning})
+            return
+        }
+
+        const stream = file.stream()
+        const reader = stream.getReader()
+
+        offer.status = FileSetup.LatestOffer
+        offer.from = user.getUsername()
+        connection.dc?.send(JSON.stringify(offer))
+        const readChunk = async () => {
+            const {value} = await reader.read();
+            if (!value) return
+            connection.dc?.send(value)
+            await readChunk()
+        }
+
+        await readChunk()
+    }
+
+    return {
+        setCurrentOffer,
+        addOfferedFiles,
+        getOfferedFiles,
+        removeOfferedFile,
+        sendFile,
+        buildFile,
+        respondToFileOffer,
+        sendFilesOffer,
+    }
 })

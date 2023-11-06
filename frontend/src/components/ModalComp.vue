@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useModalStore } from '@/stores/modal'
 
 const modal = useModalStore()

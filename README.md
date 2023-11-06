@@ -7,9 +7,8 @@ BitDash is a Airdrop like application which allows users to share files with eac
 - [x] user discovery 
 - [x] local network file sharing
 - [x] send files to a single user
-- [ ] file broadcasting to all users
+- [x] accept/deny files received
 - [ ] outside of local-network file sharing
-- [ ] accept/deny files received 
 
 ## Backend
 The backend application is a Go application that serves as a signaling mechanism for the webRTC process. The server facilitates communication between two or more devices in a webRTC session. The server acts as the middleman exchanging the information that is necessary for establisihing and managing peer-to-peer connections. The server helps devices discover each other, negotiate session details, and exchange signaling messages such as offer, answer and ICE (Interactive Connectivity Establishment) candidates.
@@ -20,13 +19,16 @@ The backend application is a Go application that serves as a signaling mechanism
 
 ```sh
 git clone https://gitlab.com/ihomer/ihomer-academy/stage/laurensdrop
-go install
 ```
 
+### Running 
+```sh
+go run cmd/web/main.go #replace cmd/web/main.go with other adapter if they exist
+```
 
 ### Building
 ```sh
-go build
+go build cmd/web/main.go
 ```
 ### Hot-Reloading 
 ```

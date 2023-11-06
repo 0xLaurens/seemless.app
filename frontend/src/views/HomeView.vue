@@ -1,35 +1,34 @@
 <script setup lang="ts">
+import InfoIcon from "@/components/icons/InfoIcon.vue";
+
 let imageSrc =
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Fig_7_Le_Telephone_by_T_du_Moncel_Paris_1880_%28Large%29.jpg/440px-Fig_7_Le_Telephone_by_T_du_Moncel_Paris_1880_%28Large%29.jpg'
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Fig_7_Le_Telephone_by_T_du_Moncel_Paris_1880_%28Large%29.jpg/440px-Fig_7_Le_Telephone_by_T_du_Moncel_Paris_1880_%28Large%29.jpg'
 </script>
 
 <template>
-  <div
-    class="features grid grid-cols-12 gap-8 content-center mx-48 font-bold capitalize text-2xl py-48"
-  >
-    <div class="left col-span-7">
-      <h1 class="max-w-2xl text-4xl md:text-5xl lg:text-6xl font-black text-white capitalize mb-5">
-        Share files directly from anywhere to anywhere
-      </h1>
-      <p class="max-w-xl text-lg md:text-xl font-medium mb-12 hind">
-        Send files of any size directly to another device without ever storing it online.
-      </p>
-      <router-link to="/nick" class="btn btn-primary btn-md btn-wide"> Share Now</router-link>
+  <section class="flex h-screen items-center justify-center py-10">
+    <div
+        class="container flex flex-col lg:flex-row items-center max-w-6xl px-4 lg:px-6 lg:items-center justify-between h-full lg:h-auto lg:justify-start w-full">
+      <div class="lg:w-1/2 space-y-4">
+        <h1 class="text-4xl text-black dark:text-white font-bold tracking-tighter sm:text-5xl xl:text-6xl"> Share Files
+          <span class="text-accent">Easily</span> and <span class="text-accent">Securely</span></h1>
+        <p class="text-lg">With our platform, you can share files with anyone, anywhere, at
+          any
+          time in
+          just a few clicks.
+        </p>
+        <div class="flex justify-center lg:justify-start space-x-3">
+          <button class="btn btn-md font-normal btn-square btn-neutral normal-case" aria-label="">
+            <info-icon/>
+          </button>
+          <router-link class="btn btn-md font-normal btn-accent normal-case" to="/nick">Start Sharing</router-link>
+        </div>
+      </div>
+      <div class="lg:w-1/2">
+        <img :src="imageSrc"
+             class="mx-auto aspect-content rounded-xl object-cover sm:w-full lg:order-last"
+             alt="tin can telephone"/>
+      </div>
     </div>
-    <div class="right col-span-5 space-y-3 mx-auto">
-      <img :src="imageSrc" class="rounded-lg shadow-2xl" alt="tin can telephone" />
-    </div>
-  </div>
-  <div
-    class="features grid grid-cols-12 gap-8 content-center mx-48 font-bold capitalize text-2xl mb-48"
-  >
-    <div class="left col-span-7 space-y-3">
-      <h2 class="hind">🔥 Blazingly Fast</h2>
-      <h2 class="hind">♾️ No File Size Limit</h2>
-    </div>
-    <div class="right col-span-5 space-y-3">
-      <h2 class="hind">🔄 Peer-to-Peer</h2>
-      <h2 class="hind">🔒 End-to-end encryption</h2>
-    </div>
-  </div>
+  </section>
 </template>
