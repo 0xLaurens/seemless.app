@@ -18,7 +18,7 @@ export const useFileStore = defineStore('file', () => {
     const stream: Ref<WritableStream<Uint8Array> | undefined> = ref(undefined)
     const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
     const accSize = ref(0)
-    const currentOffer: Ref<FileOffer | undefined> = ref(undefined)
+    const receiveOffer: Ref<FileOffer | undefined> = ref(undefined)
     const sendOffer: Ref<FileOffer | undefined> = ref(undefined)
     StreamSaver.mitm = `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0`
 
@@ -31,21 +31,21 @@ export const useFileStore = defineStore('file', () => {
         return sendOffer
     }
 
-    function setCurrentOffer(offer: FileOffer) {
-        currentOffer.value = offer
+    function setReceiveOffer(offer: FileOffer) {
+        receiveOffer.value = offer
     }
 
-    function getCurrentOffer(): Ref<FileOffer | undefined> {
-        return currentOffer
+    function getReceiveOffer(): Ref<FileOffer | undefined> {
+        return receiveOffer
     }
 
     async function buildFile(chunk: ArrayBuffer) {
-        if (!currentOffer.value) {
+        if (!receiveOffer.value) {
             console.warn("current file not setup")
             return
         }
 
-        const file = currentOffer.value.files[currentOffer.value.current]
+        const file = receiveOffer.value.files[receiveOffer.value.current]
 
         if (!stream.value) {
             console.log("stream.value")
@@ -61,25 +61,25 @@ export const useFileStore = defineStore('file', () => {
 
         // update file progress
         file.progress = accSize.value;
-        currentOffer.value.files[currentOffer.value.current] = file;
+        receiveOffer.value.files[receiveOffer.value.current] = file;
 
         if (accSize.value == file.size) {
-            console.log(currentOffer.value?.files)
+            console.log(receiveOffer.value?.files)
             console.log("close writer", accSize.value)
             await writer.value?.close()
 
-            console.log(currentOffer.value)
-            const connection = conn.GetUserConnection(currentOffer.value.from)
+            console.log(receiveOffer.value)
+            const connection = conn.GetUserConnection(receiveOffer.value.from)
             if (!connection) return
 
             file.status = FileStatus.Complete
-            currentOffer.value.files[currentOffer.value.current] = file;
+            receiveOffer.value.files[receiveOffer.value.current] = file;
 
             stream.value = undefined
             writer.value = undefined
             accSize.value = 0
 
-            const offer = currentOffer.value;
+            const offer = receiveOffer.value;
             console.log("RequestNext", offer.current, offer.files.length, offer.current + 1 < offer.files.length)
             if (offer.current + 1 >= offer.files.length) {
                 console.log("No next file")
@@ -87,9 +87,9 @@ export const useFileStore = defineStore('file', () => {
             }
             offer.current += 1
             offer.status = FileSetup.RequestNext
-            currentOffer.value = offer
+            receiveOffer.value = offer
 
-            setCurrentOffer(offer)
+            setReceiveOffer(offer)
 
             connection.dc?.send(JSON.stringify(offer))
         }
@@ -196,8 +196,8 @@ export const useFileStore = defineStore('file', () => {
     return {
         setSendOffer,
         getSendOffer,
-        setCurrentOffer,
-        getCurrentOffer,
+        setReceiveOffer,
+        getReceiveOffer,
         addOfferedFiles,
         getOfferedFiles,
         removeOfferedFile,

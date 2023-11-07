@@ -65,7 +65,7 @@ export const useConnStore = defineStore('conn', () => {
                     break
                 }
                 case FileSetup.LatestOffer: {
-                    file.setCurrentOffer(offer)
+                    file.setReceiveOffer(offer)
                     break
                 }
                 case FileSetup.Offer: {
