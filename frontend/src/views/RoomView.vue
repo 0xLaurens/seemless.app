@@ -9,9 +9,12 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import ConfirmDownload from '@/components/ConfirmDownload.vue'
 import {useWebsocketStore} from '@/stores/websocket'
 import WsConnection from '@/components/WsConnection.vue'
+import FileStatusCard from "@/components/FileStatusCard.vue";
+import {useFileStore} from "@/stores/file";
 
 const user = useUserStore()
-const ws = useWebsocketStore()
+const ws = useWebsocketStore();
+const file = useFileStore();
 
 const route = useRoute()
 const id = route.params.id
@@ -52,6 +55,16 @@ onUnmounted(() => {
             <user-avatar :user="u"/>
           </div>
           <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
+        </div>
+      </div>
+      <div class="space-y-3" v-if="file.getCurrentOffer().value">
+        <p class="text-bold text-xl">Files.</p>
+        <div v-bind:key="f.name" v-for="f in file.getCurrentOffer().value?.files" class="w-full">
+          <file-status-card
+              :target="file.getCurrentOffer().value?.target"
+              :from="file.getCurrentOffer().value?.from"
+              :file="f" class="w-full"
+          />
         </div>
       </div>
       <div>
