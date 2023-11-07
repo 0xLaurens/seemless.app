@@ -19,8 +19,17 @@ export const useFileStore = defineStore('file', () => {
     const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
     const accSize = ref(0)
     const currentOffer: Ref<FileOffer | undefined> = ref(undefined)
+    const sendOffer: Ref<FileOffer | undefined> = ref(undefined)
     StreamSaver.mitm = `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0`
 
+
+    function setSendOffer(offer: FileOffer) {
+        sendOffer.value = offer;
+    }
+
+    function getSendOffer() {
+        return sendOffer
+    }
 
     function setCurrentOffer(offer: FileOffer) {
         currentOffer.value = offer
@@ -165,9 +174,18 @@ export const useFileStore = defineStore('file', () => {
             offer.status = FileSetup.LatestOffer
             connection.dc?.send(JSON.stringify(offer))
         }
+
+        const fm = sendOffer.value!.files[sendOffer.value!.current]
         const readChunk = async () => {
-            const {value} = await reader.read();
+            const {value, done} = await reader.read();
+            if (done) {
+                sendOffer.value!.current++;
+            }
             if (!value) return
+
+            fm.progress += value.length
+            sendOffer.value!.files[sendOffer.value!.current] = fm
+
             connection.dc?.send(value)
             await readChunk()
         }
@@ -176,6 +194,8 @@ export const useFileStore = defineStore('file', () => {
     }
 
     return {
+        setSendOffer,
+        getSendOffer,
         setCurrentOffer,
         getCurrentOffer,
         addOfferedFiles,
