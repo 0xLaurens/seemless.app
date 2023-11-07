@@ -26,6 +26,10 @@ export const useFileStore = defineStore('file', () => {
         currentOffer.value = offer
     }
 
+    function getCurrentOffer(): Ref<FileOffer | undefined> {
+        return currentOffer
+    }
+
     async function buildFile(chunk: ArrayBuffer) {
         if (!currentOffer.value) {
             console.warn("current file not setup")
@@ -45,6 +49,10 @@ export const useFileStore = defineStore('file', () => {
         await writer.value?.write(buffer)
 
         accSize.value += buffer.length
+
+        // update file progress
+        file.progress = accSize.value;
+        currentOffer.value.files[currentOffer.value.current] = file;
 
         if (accSize.value == file.size) {
             console.log("close writer", accSize.value)
@@ -93,6 +101,7 @@ export const useFileStore = defineStore('file', () => {
                 mime: file.type,
                 name: file.name,
                 size: file.size,
+                progress: 0,
                 status: FileStatus.Init,
             }
             messages.push(msg)
@@ -161,6 +170,7 @@ export const useFileStore = defineStore('file', () => {
 
     return {
         setCurrentOffer,
+        getCurrentOffer,
         addOfferedFiles,
         getOfferedFiles,
         removeOfferedFile,
