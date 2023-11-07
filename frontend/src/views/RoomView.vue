@@ -58,11 +58,21 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="space-y-3" v-if="file.getCurrentOffer().value">
-        <p class="text-bold text-xl">Files.</p>
+        <p class="text-bold text-xl">Files receiving.</p>
         <div v-bind:key="f.name" v-for="f in file.getCurrentOffer().value?.files" class="w-full">
           <file-status-card
               :target="file.getCurrentOffer().value?.target"
               :from="file.getCurrentOffer().value?.from"
+              :file="f" class="w-full"
+          />
+        </div>
+      </div>
+      <div class="space-y-3" v-if="file.getSendOffer().value">
+        <p class="text-bold text-xl">Files sending.</p>
+        <div v-bind:key="f.name" v-for="f in file.getSendOffer().value?.files" class="w-full">
+          <file-status-card
+              :target="file.getSendOffer().value?.target"
+              :from="file.getSendOffer().value?.from"
               :file="f" class="w-full"
           />
         </div>
