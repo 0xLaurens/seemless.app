@@ -66,7 +66,6 @@ export const useFileStore = defineStore('file', () => {
 
             const offer = currentOffer.value;
             offer.files[currentOffer.value.current] = file
-            offer.from = user.getUsername()
             console.log("RequestNext", offer.current, offer.files.length, offer.current + 1 < offer.files.length)
             if (offer.current + 1 < offer.files.length) {
                 offer.current += 1
@@ -124,12 +123,14 @@ export const useFileStore = defineStore('file', () => {
             status: FileSetup.Offer,
             files: fileMessages,
             current: 0,
+            target: "target",
             from: user.getUsername()
         }
 
         addOfferedFiles(offer.id, files)
 
         for (const connection of connections) {
+            offer.target = connection.username
             connection.dc?.send(JSON.stringify(offer))
         }
     }
@@ -139,16 +140,15 @@ export const useFileStore = defineStore('file', () => {
         if (!connection) return
 
         offer.status = status
-        offer.from = user.getUsername()
 
         connection.dc?.send(JSON.stringify(offer))
     }
 
     async function sendFile(file: File, offer: FileOffer) {
-        const connection = conn.GetUserConnection(offer.from)
+        const connection = conn.GetUserConnection(offer.target)
         console.log("send File", offer)
         if (!connection) {
-            toast.notify({message: `No longer connected to ${offer.from}`, type: ToastType.Warning})
+            toast.notify({message: `No longer connected to ${offer.target}`, type: ToastType.Warning})
             return
         }
 
@@ -156,7 +156,6 @@ export const useFileStore = defineStore('file', () => {
         const reader = stream.getReader()
 
         offer.status = FileSetup.LatestOffer
-        offer.from = user.getUsername()
         connection.dc?.send(JSON.stringify(offer))
         const readChunk = async () => {
             const {value} = await reader.read();
