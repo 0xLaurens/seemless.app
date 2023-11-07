@@ -10,6 +10,7 @@ export interface FileOffer {
     id: string
     status: FileSetup
     from: string
+    target: string
     files: FileMessage[]
     current: number
 }
