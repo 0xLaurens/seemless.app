@@ -26,7 +26,9 @@ import {useUserStore} from "@/stores/user";
         <div class="flex justify-between align-bottom">
           <div class="flex space-x-2">
             <div class="flex">
-              <p class="font-bold">{{ file.name }}</p>
+              <p class="font-bold">{{
+                  file.name.length < 25 ? file.name : file.name.slice(0, 10) + "..." + file.name.slice(file.name.length - 11, file.name.length)
+                }}</p>
             </div>
             <p>{{ from == user.getUsername() ? "from" : "to" }} {{ from }}</p>
           </div>
