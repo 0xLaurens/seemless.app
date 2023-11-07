@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import {ref, watch} from "vue";
-import type {Ref} from "vue";
+import DocumentIcon from "@/components/icons/DocumentIcon.vue";
+import type {FileMessage} from "@/models/file";
+import {useUserStore} from "@/stores/user";
+import {computed} from "vue";
 
 const props = defineProps<{
   from: string | undefined,
@@ -8,15 +10,11 @@ const props = defineProps<{
   file: FileMessage
 }>()
 
-const user = useUserStore()
-const progress: Ref<number> = ref(0);
-watch(props.file, (file) => {
-  progress.value = Math.round((file.progress / file.size * 100));
-})
+const progress = computed(() => {
+  return Math.round((props.file.progress / props.file.size * 100))
+});
 
-import DocumentIcon from "@/components/icons/DocumentIcon.vue";
-import type {FileMessage} from "@/models/file";
-import {useUserStore} from "@/stores/user";
+const user = useUserStore()
 </script>
 
 <template>
@@ -35,16 +33,19 @@ import {useUserStore} from "@/stores/user";
           </div>
           <p>{{ progress }}%</p>
         </div>
-        <progress class="progress progress-accent w-full" :value="progress" max="100"></progress>
+        <progress class="progress progress-accent w-full" :value="Math.round((file.progress / file.size * 100))"
+                  max="100"></progress>
       </div>
       <div class="p-3 items-center">
-        <svg v-if="progress == 100.0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        <svg v-if="progress == 100.0" xmlns="http://www.w3.org/2000/svg"
+             fill="none" viewBox="0 0 24 24"
              stroke-width="1.5" stroke="currentColor"
              class="w-8 h-auto text-accent">
           <path stroke-linecap="round" stroke-linejoin="round"
                 d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <svg v-if="progress < 100" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+        <svg v-if="progress < 100" xmlns="http://www.w3.org/2000/svg" fill="none"
+             viewBox="0 0 24 24" stroke-width="1.5"
              stroke="currentColor"
              class="w-6 h-auto">
           <path stroke-linecap="round" stroke-linejoin="round"
