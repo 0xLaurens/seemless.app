@@ -68,6 +68,10 @@ export const useConnStore = defineStore('conn', () => {
                     file.setReceiveOffer(offer)
                     break
                 }
+                case FileSetup.DownloadProgress: {
+                    file.setSendOffer(offer);
+                    break;
+                }
                 case FileSetup.Offer: {
                     download.addOffer(offer)
                     break

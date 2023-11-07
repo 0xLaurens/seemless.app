@@ -46,6 +46,7 @@ export const useFileStore = defineStore('file', () => {
         }
 
         const file = receiveOffer.value.files[receiveOffer.value.current]
+        const connection = conn.GetUserConnection(receiveOffer.value.from)
 
         if (!stream.value) {
             console.log("stream.value")
@@ -62,6 +63,9 @@ export const useFileStore = defineStore('file', () => {
         // update file progress
         file.progress = accSize.value;
         receiveOffer.value.files[receiveOffer.value.current] = file;
+        receiveOffer.value.status = FileSetup.DownloadProgress
+
+        connection?.dc?.send(JSON.stringify(receiveOffer.value))
 
         if (accSize.value == file.size) {
             console.log(receiveOffer.value?.files)
@@ -69,8 +73,6 @@ export const useFileStore = defineStore('file', () => {
             await writer.value?.close()
 
             console.log(receiveOffer.value)
-            const connection = conn.GetUserConnection(receiveOffer.value.from)
-            if (!connection) return
 
             file.status = FileStatus.Complete
             receiveOffer.value.files[receiveOffer.value.current] = file;
@@ -91,7 +93,7 @@ export const useFileStore = defineStore('file', () => {
 
             setReceiveOffer(offer)
 
-            connection.dc?.send(JSON.stringify(offer))
+            connection?.dc?.send(JSON.stringify(offer))
         }
     }
 
@@ -175,16 +177,9 @@ export const useFileStore = defineStore('file', () => {
             connection.dc?.send(JSON.stringify(offer))
         }
 
-        const fm = sendOffer.value!.files[sendOffer.value!.current]
         const readChunk = async () => {
-            const {value, done} = await reader.read();
-            if (done) {
-                sendOffer.value!.current++;
-            }
+            const {value} = await reader.read();
             if (!value) return
-
-            fm.progress += value.length
-            sendOffer.value!.files[sendOffer.value!.current] = fm
 
             connection.dc?.send(value)
             await readChunk()
