@@ -55,6 +55,7 @@ export const useFileStore = defineStore('file', () => {
         currentOffer.value.files[currentOffer.value.current] = file;
 
         if (accSize.value == file.size) {
+            console.log(currentOffer.value?.files)
             console.log("close writer", accSize.value)
             await writer.value?.close()
 
@@ -63,21 +64,25 @@ export const useFileStore = defineStore('file', () => {
             if (!connection) return
 
             file.status = FileStatus.Complete
-
-            const offer = currentOffer.value;
-            offer.files[currentOffer.value.current] = file
-            console.log("RequestNext", offer.current, offer.files.length, offer.current + 1 < offer.files.length)
-            if (offer.current + 1 < offer.files.length) {
-                offer.current += 1
-                offer.status = FileSetup.RequestNext
-            }
-            currentOffer.value = offer
-
-            connection.dc?.send(JSON.stringify(offer))
+            currentOffer.value.files[currentOffer.value.current] = file;
 
             stream.value = undefined
             writer.value = undefined
             accSize.value = 0
+
+            const offer = currentOffer.value;
+            console.log("RequestNext", offer.current, offer.files.length, offer.current + 1 < offer.files.length)
+            if (offer.current + 1 >= offer.files.length) {
+                console.log("No next file")
+                return
+            }
+            offer.current += 1
+            offer.status = FileSetup.RequestNext
+            currentOffer.value = offer
+
+            setCurrentOffer(offer)
+
+            connection.dc?.send(JSON.stringify(offer))
         }
     }
 
@@ -155,8 +160,11 @@ export const useFileStore = defineStore('file', () => {
         const stream = file.stream()
         const reader = stream.getReader()
 
-        offer.status = FileSetup.LatestOffer
-        connection.dc?.send(JSON.stringify(offer))
+
+        if (offer.current == 0) {
+            offer.status = FileSetup.LatestOffer
+            connection.dc?.send(JSON.stringify(offer))
+        }
         const readChunk = async () => {
             const {value} = await reader.read();
             if (!value) return
