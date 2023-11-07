@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {ref, watch} from "vue";
+import type {Ref} from "vue";
 
-const progress = ref(0)
-const receiving = ref(false)
-const username = ref("username");
+const props = defineProps<{
+  from: string | undefined,
+  file: FileMessage
+}>()
+
+const user = useUserStore()
+const progress: Ref<number> = ref(0);
+watch(props.file, (file) => {
+  progress.value = parseFloat((file.progress / file.size * 100).toFixed(1));
+})
 
 import DocumentIcon from "@/components/icons/DocumentIcon.vue";
+import type {FileMessage} from "@/models/file";
+import {useUserStore} from "@/stores/user";
 </script>
 
 <template>
@@ -16,16 +26,16 @@ import DocumentIcon from "@/components/icons/DocumentIcon.vue";
         <div class="flex justify-between align-bottom">
           <div class="flex space-x-2">
             <div class="flex">
-              <p class="font-bold">Files.txt</p>
+              <p class="font-bold">{{ file.name }}</p>
             </div>
-            <p>{{ receiving ? "from" : "to" }} {{ username }}</p>
+            <p>{{ from == user.getUsername() ? "from" : "to" }} {{ from }}</p>
           </div>
           <p>{{ progress }}%</p>
         </div>
         <progress class="progress progress-accent w-full" :value="progress" max="100"></progress>
       </div>
       <div class="p-3 items-center">
-        <svg v-if="progress == 100" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        <svg v-if="progress == 100.0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
              stroke-width="1.5" stroke="currentColor"
              class="w-8 h-auto text-accent">
           <path stroke-linecap="round" stroke-linejoin="round"
