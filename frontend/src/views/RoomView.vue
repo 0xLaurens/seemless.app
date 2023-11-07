@@ -57,12 +57,12 @@ onUnmounted(() => {
           <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
         </div>
       </div>
-      <div class="space-y-3" v-if="file.getCurrentOffer().value">
+      <div class="space-y-3" v-if="file.getReceiveOffer().value">
         <p class="text-bold text-xl">Files receiving.</p>
-        <div v-bind:key="f.name" v-for="f in file.getCurrentOffer().value?.files" class="w-full">
+        <div v-bind:key="f.name" v-for="f in file.getReceiveOffer().value?.files" class="w-full">
           <file-status-card
-              :target="file.getCurrentOffer().value?.target"
-              :from="file.getCurrentOffer().value?.from"
+              :target="file.getReceiveOffer().value?.target"
+              :from="file.getReceiveOffer().value?.from"
               :file="f" class="w-full"
           />
         </div>
