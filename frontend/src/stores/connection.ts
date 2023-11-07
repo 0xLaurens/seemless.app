@@ -73,6 +73,7 @@ export const useConnStore = defineStore('conn', () => {
                     break
                 }
                 case FileSetup.AcceptOffer: {
+                    file.setSendOffer(offer)
                     const files = file.getOfferedFiles(offer.id)
                     if (files == undefined) {
                         console.log("something went wrong!")
