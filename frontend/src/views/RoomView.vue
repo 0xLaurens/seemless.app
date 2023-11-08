@@ -30,61 +30,84 @@ onUnmounted(() => {
 
 <template>
   <confirm-download/>
-  <section class="flex h-screen items-center justify-center py-10">
-    <div class="flex flex-col items-center max-w-3xl w-full h-full justify-between px-3 md:px-0">
-      <div class="flex flex-row justify-between items-center w-full">
-        <div>
-          <router-link to="../nick" class="btn btn-md md:btn-lg btn-ghost font-black">
-            <back-icon/>
-          </router-link>
-        </div>
-        <div>
-          <h1 class="text-2xl lg:text-4xl font-black text-center text-black dark:text-white capitalize">
-            Room: {{ id }}
-          </h1>
-        </div>
-        <div>
-          <button class="btn btn-md md:btn-lg btn-accent btn-outline">
-            <qr-icon/>
-          </button>
-        </div>
-      </div>
-      <div class="users-box flow-root">
-        <div class="flex flex-wrap justify-center align-middle">
-          <div :key="u.username" v-for="u in user.users">
-            <user-avatar :user="u"/>
-          </div>
-          <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
-        </div>
-      </div>
-      <div class="space-y-3" v-if="file.getReceiveOffer().value">
-        <p class="text-bold text-xl">Files receiving.</p>
-        <div v-bind:key="f.name" v-for="f in file.getReceiveOffer().value?.files" class="w-full">
-          <file-status-card
-              :target="file.getReceiveOffer().value?.target"
-              :from="file.getReceiveOffer().value?.from"
-              :file="f" class="w-full"
-          />
-        </div>
-      </div>
-      <div class="space-y-3" v-if="file.getSendOffer().value">
-        <p class="text-bold text-xl">Files sending.</p>
-        <div v-bind:key="f.name" v-for="f in file.getSendOffer().value?.files" class="w-full">
-          <file-status-card
-              :target="file.getSendOffer().value?.target"
-              :from="file.getSendOffer().value?.from"
-              :file="f" class="w-full"
-          />
-        </div>
+  <section class="items-center py-10 my-auto px-3">
+    <div class="flex flex-row justify-between mx-auto items-center max-w-6xl pb-10">
+      <div>
+        <router-link to="../nick" class="btn btn-md md:btn-lg btn-ghost font-black">
+          <back-icon/>
+        </router-link>
       </div>
       <div>
-        <div class="flex justify-center">
-          <file-input/>
+        <h1 class="text-2xl lg:text-4xl font-black text-center text-black dark:text-white capitalize">
+          Room: {{ id }}
+        </h1>
+      </div>
+      <div>
+        <button class="btn btn-md md:btn-lg btn-accent btn-outline">
+          <qr-icon/>
+        </button>
+      </div>
+    </div>
+    <div class="flex flex-1 flex-row w-full px-3 md:pl-10 space-x-3 justify-between md:h-[60vh]">
+      <div class="items-center w-full "
+           :class="(file.getReceiveOffer()?.value == undefined && file.getSendOffer()?.value  == undefined) ? '' : 'max-w-2xl'">
+        <div class="users-box flow-root">
+          <div class="flex flex-wrap justify-center align-middle">
+            <div :key="u.username" v-for="u in user.users">
+              <user-avatar :user="u"/>
+            </div>
+            <p v-if="user.users.length < 1" class="break-words">Wait for other users to connect...</p>
+          </div>
         </div>
-        <div>
-          <ws-connection/>
+      </div>
+      <div class="files card bg-neutral pt-3 pb-6 max-w-2xl w-full max-h-[45vh]"
+           :class="(file.getReceiveOffer()?.value == undefined && file.getSendOffer()?.value  == undefined) ? 'hidden' : 'hidden md:flex md:flex-col'">
+        <h2 class="text-2xl pl-3">Files.</h2>
+        <div class="divider my-0"></div>
+        <div class="w-full max-h-96 overflow-y-scroll">
+          <div v-bind:key="f.name" v-for="f in file.getReceiveOffer().value?.files" class="w-full">
+            <file-status-card
+                :target="file.getReceiveOffer().value?.target"
+                :from="file.getReceiveOffer().value?.from"
+                :file="f" class="w-full"
+            />
+          </div>
+          <div v-bind:key="f.name" v-for="f in file.getSendOffer().value?.files" class="w-full">
+            <file-status-card
+                :target="file.getSendOffer().value?.target"
+                :from="file.getSendOffer().value?.from"
+                :file="f" class="w-full"
+            />
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="pt-6">
+      <div class="flex justify-center">
+        <file-input/>
+      </div>
+      <div>
+        <ws-connection/>
+      </div>
+    </div>
   </section>
+  <div class="files flex flex-col md:hidden w-full space-y-3 px-3">
+    <p class="text-bold text-xl">Files.</p>
+    <div v-bind:key="f.name" v-for="f in file.getReceiveOffer().value?.files" class="w-full">
+      <file-status-card
+          :target="file.getReceiveOffer().value?.target"
+          :from="file.getReceiveOffer().value?.from"
+          :file="f" class="w-full"
+      />
+    </div>
+    <div v-bind:key="f.name" v-for="f in file.getSendOffer().value?.files" class="w-full">
+      <file-status-card
+          :target="file.getSendOffer().value?.target"
+          :from="file.getSendOffer().value?.from"
+          :file="f" class="w-full"
+      />
+    </div>
+  </div>
+
 </template>
