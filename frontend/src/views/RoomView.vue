@@ -48,7 +48,7 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    <div class="flex flex-1 flex-row w-full px-3 md:pl-10 space-x-3 justify-between md:h-[60vh]">
+    <div class="flex flex-1 flex-row w-full px-3 md:pl-10 space-x-3 md:h-[60vh] items-center justify-between">
       <div class="items-center w-full "
            :class="(file.getReceiveOffer()?.value == undefined && file.getSendOffer()?.value  == undefined) ? '' : 'max-w-2xl'">
         <div class="users-box flow-root">
