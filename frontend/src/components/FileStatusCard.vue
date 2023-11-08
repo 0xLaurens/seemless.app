@@ -18,25 +18,25 @@ const user = useUserStore()
 </script>
 
 <template>
-  <div class="card bg-neutral">
-    <div class="flex py-2 px-3 items-center">
-      <document-icon class="h-9 w-auto mr-3"/>
+  <div class="card bg-neutral w-full">
+    <div class="flex py-1 md:py-3 px-3 items-center">
+      <document-icon class="h-9 w-9 mr-3"/>
       <div class="w-full">
-        <div class="flex justify-between align-bottom">
-          <div class="flex space-x-2">
-            <div class="flex">
-              <p class="font-bold">{{
-                  file.name.length < 25 ? file.name : file.name.slice(0, 10) + "..." + file.name.slice(file.name.length - 11, file.name.length)
-                }}</p>
-            </div>
-            <p>{{ target == user.getUsername() ? `from ${from}` : `to ${target}` }}</p>
+        <div class="flex justify-between">
+          <div class="flex space-x-3">
+            <p class="font-bold truncate max-w-sm">{{ file.name }}</p>
+            <p class="hidden lg:flex">{{ target == user.getUsername() ? `from ${from}` : `to ${target}` }}</p>
           </div>
-          <p>{{ progress }}%</p>
+          <p class="hidden lg:flex">{{ progress }}%</p>
         </div>
         <progress class="progress progress-accent w-full" :value="Math.round((file.progress / file.size * 100))"
                   max="100"></progress>
+        <div class="flex space-x-3 justify-between text-sm lg:hidden">
+          <p>{{ target == user.getUsername() ? `from ${from}` : `to ${target}` }}</p>
+          <p>{{ progress }}%</p>
+        </div>
       </div>
-      <div class="p-3 items-center">
+      <div class="ml-3 items-center">
         <svg v-if="progress == 100.0" xmlns="http://www.w3.org/2000/svg"
              fill="none" viewBox="0 0 24 24"
              stroke-width="1.5" stroke="currentColor"
