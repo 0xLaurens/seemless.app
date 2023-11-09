@@ -2,13 +2,13 @@ package data
 
 type Message struct {
 	Type      MessageType       `json:"type"`
-	From      string            `json:"from"`
-	Target    string            `json:"target"`
-	User      *User             `json:"user"`
-	Users     []*User           `json:"users"`
-	SDP       string            `json:"sdp"`
-	Candidate *RTCIceCandidate  `json:"candidate"`
-	Body      map[string]string `json:"body"`
+	From      string            `json:"from,omitempty"`
+	Target    string            `json:"target,omitempty"`
+	User      *User             `json:"user,omitempty"`
+	Users     []*User           `json:"users,omitempty"`
+	SDP       string            `json:"sdp,omitempty"`
+	Candidate *RTCIceCandidate  `json:"candidate,omitempty"`
+	Body      map[string]string `json:"body,omitempty"`
 }
 
 type MessageType string
