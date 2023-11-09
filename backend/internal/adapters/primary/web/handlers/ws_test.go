@@ -22,6 +22,9 @@ const (
 
 var TestUrl = fmt.Sprintf("ws://localhost:%d/ws", TestPort)
 
+/*
+ * Helper function for creating the app
+ */
 func setupTestApp() *fiber.App {
 	// init in memory user repo & other services
 	ur := repo.NewUserRepoInMemory()
@@ -29,9 +32,6 @@ func setupTestApp() *fiber.App {
 	wh := NewWebsocketHandler(us)
 
 	app := fiber.New()
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hi mom!")
-	})
 
 	app.Use("/ws", wh.UpgradeWebsocket)
 	app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
@@ -61,6 +61,26 @@ func setupTestApp() *fiber.App {
 	<-readyCh
 
 	return app
+}
+
+/*
+ * Helper function for the joining the room
+ */
+func joinRoomHelper(t *testing.T, conn *websocket.Conn, username string) {
+	// UsernamePrompt
+	_, _, err := conn.ReadMessage()
+	assert.NoError(t, err)
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Username,
+		Body: make(map[string]string),
+	}
+	joinMessage.Body["username"] = username
+	conn.WriteJSON(joinMessage)
+
+	// Peers message
+	_, _, _ = conn.ReadMessage()
+	// UserJoined
+	_, _, _ = conn.ReadMessage()
 }
 
 func TestInvalidWebsocketRequestShouldReturnUpgradeRequired(t *testing.T) {
