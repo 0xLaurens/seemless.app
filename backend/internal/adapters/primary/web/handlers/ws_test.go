@@ -31,7 +31,7 @@ func setupTestApp() *fiber.App {
 	us := services.NewUserService(ur)
 	wh := NewWebsocketHandler(us)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
 	app.Use("/ws", wh.UpgradeWebsocket)
 	app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
@@ -66,10 +66,8 @@ func setupTestApp() *fiber.App {
 /*
  * Helper function for the joining the room
  */
-func joinRoomHelper(t *testing.T, conn *websocket.Conn, username string) {
-	// UsernamePrompt
-	_, _, err := conn.ReadMessage()
-	assert.NoError(t, err)
+func joinRoomHelper(conn *ws.Conn, username string) {
+	_, _, _ = conn.ReadMessage()
 	joinMessage := data.Message{
 		Type: data.MessageTypes.Username,
 		Body: make(map[string]string),
@@ -251,6 +249,74 @@ func TestUserSelectUsernameWrongBody(t *testing.T) {
 
 	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
 	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
+}
+
+// UC4 - Peers
+func TestPeersJoinMessageSentOnlyToNewestUser(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	// FRED GOES THROUGH THE JOIN PROCESS
+	joinRoomHelper(fred, "Fred")
+
+	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+
+	// username prompt
+	_, _, _ = joe.ReadMessage()
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Username,
+		Body: make(map[string]string),
+	}
+	joinMessage.Body["username"] = "Joe"
+	err = joe.WriteJSON(joinMessage)
+
+	_, peers, err := joe.ReadMessage()
+	peersMessage := data.Message{}
+	err = utils.MapJsonToStruct(peers, &peersMessage)
+	assert.Equal(t, data.MessageTypes.Peers, peersMessage.Type)
+	assert.Equal(t, "Fred", peersMessage.Users[0].Username)
+
+	_, joinJoe, err := fred.ReadMessage()
+	joinJoeMessage := data.Message{}
+	err = utils.MapJsonToStruct(joinJoe, &joinJoeMessage)
+	expectedUser := data.CreateUser("Joe", "android")
+	assert.Equal(t, expectedUser, joinJoeMessage.User)
+	assert.Equal(t, data.MessageTypes.PeerJoined, joinJoeMessage.Type)
+}
+
+// UC4 - Peers
+func TestPeersLeaveMessageSentAfterConnectionCloses(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	// FRED GOES THROUGH THE JOIN PROCESS
+	joinRoomHelper(fred, "Fred")
+
+	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(joe, "Joe")
+
+	// peer joined message
+	_, _, _ = fred.ReadMessage()
+
+	err = fred.Close()
+	assert.NoError(t, err)
+
+	_, leave, err := joe.ReadMessage()
+	assert.NoError(t, err)
+	leaveMessage := data.Message{}
+	err = utils.MapJsonToStruct(leave, &leaveMessage)
+	assert.NoError(t, err)
+
+	assert.Equal(t, data.MessageTypes.PeerLeft, leaveMessage.Type)
+	assert.Equal(t, "Fred", leaveMessage.From)
+	assert.Equal(t, "Fred", leaveMessage.User.Username)
 }
 
 //func TestWsHandlerInvalidJsonToReturnInvalidRequest(t *testing.T) {
