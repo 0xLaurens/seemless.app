@@ -33,10 +33,13 @@ func (wh *WebsocketHandler) UpgradeWebsocket(c *fiber.Ctx) error {
 func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 	wh.msg.SetWebsocketMsgNotifierConn(c)
 	username := ""
-	err := wh.msg.SendJSON(fiber.Map{
-		"type":    "UsernamePrompt",
-		"message": "provide a username",
-	})
+	usernamePrompt := data.Message{
+		Type: data.MessageTypes.UsernamePrompt,
+		Body: make(map[string]string),
+	}
+	usernamePrompt.Body["message"] = "Please provide a username"
+
+	err := wh.msg.SendJSON(usernamePrompt)
 	if err != nil {
 		log.Println("ERR -->> write JSON error")
 		return err
@@ -157,7 +160,7 @@ func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
 		break
 	default:
 		log.Println("ERR -->> invalid request")
-		err := wh.msg.InvalidMessage(fiber.Map{})
+		err := wh.msg.InvalidMessage(nil)
 		if err != nil {
 			return
 		}
