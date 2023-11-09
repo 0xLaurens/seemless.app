@@ -22,6 +22,8 @@ var MessageTypes = struct {
 	PeerUpdated     MessageType
 	Peers           MessageType
 	Username        MessageType
+	UsernamePrompt  MessageType
+	InvalidMessage  MessageType
 }{
 	Offer:           "Offer",
 	Answer:          "Answer",
@@ -31,4 +33,6 @@ var MessageTypes = struct {
 	PeerUpdated:     "PeerUpdated",
 	Peers:           "Peers",
 	Username:        "Username",
+	UsernamePrompt:  "UsernamePrompt",
+	InvalidMessage:  "InvalidMessage",
 }
