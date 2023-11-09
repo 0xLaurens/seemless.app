@@ -1,36 +1,42 @@
-package secondary
+package handlers
 
-//import (
-//	"encoding/json"
-//	"fmt"
-//	ws "github.com/fasthttp/websocket"
-//	"github.com/gofiber/contrib/websocket"
-//	"github.com/gofiber/fiber/v2"
-//	"github.com/stretchr/testify/assert"
-//	"io"
-//	"laurensdrop/internal/core/data"
-//	"log"
-//	"net/http"
-//	"net/http/httptest"
-//	"testing"
-//	"time"
-//)
-//
-//func setupTestApp() *fiber.App {
-//	//// init in memory store and hub
-//	//s := repo.NewUserRepoInMemory()
-//	//hub := handlers.CreateHub(s)
-//	//go hub.Run()
-//	//
-//	//app := fiber.New()
-//	//
-//	//app.Use("/ws", handlers.WSUpgrader)
-//	//app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
-//	//	handlers.WSHandler(conn, hub)
-//	//}))
-//
-//	//return app
-//}
+import (
+	"laurensdrop/internal/adapters/primary/web"
+	"laurensdrop/internal/adapters/secondary/repo"
+	"laurensdrop/internal/core/services"
+	"net"
+)
+
+func setupTestApp() *web.App {
+	// init in memory user repo & other services
+	ur := repo.NewUserRepoInMemory()
+	us := services.NewUserService(ur)
+	ws := NewWebsocketHandler(us)
+
+	app := web.NewApp(ws, web.WithPort(6611))
+
+	readyCh := make(chan struct{})
+
+	go func() {
+		for {
+			conn, err := net.Dial("tcp", "localhost:6611")
+			if err != nil {
+				continue
+			}
+
+			if conn != nil {
+				readyCh <- struct{}{}
+				conn.Close()
+				break
+			}
+		}
+	}()
+
+	<-readyCh
+
+	return app
+}
+
 //
 //func runTestApp() (*fiber.App, chan struct{}) {
 //	app := setupTestApp()
