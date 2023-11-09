@@ -251,6 +251,33 @@ func TestUserSelectUsernameWrongBody(t *testing.T) {
 	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
 }
 
+func TestUserSelectUsernameWrongBodyAndWrongType(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	// UsernamePrompt
+	_, _, err = conn.ReadMessage()
+	assert.NoError(t, err)
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.NewIceCandidate,
+		Body: make(map[string]string),
+	}
+	err = conn.WriteJSON(joinMessage)
+	assert.NoError(t, err)
+
+	_, invalidRequest, err := conn.ReadMessage()
+	invalidMessage := data.Message{}
+	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
+
+	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
+	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
+}
+
 // UC4 - Peers
 func TestPeersJoinMessageSentOnlyToNewestUser(t *testing.T) {
 	app := setupTestApp()
@@ -319,308 +346,37 @@ func TestPeersLeaveMessageSentAfterConnectionCloses(t *testing.T) {
 	assert.Equal(t, "Fred", leaveMessage.User.Username)
 }
 
-//func TestWsHandlerInvalidJsonToReturnInvalidRequest(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	defer conn.Close()
-//	if err != nil {
-//		return
-//	}
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	joinHelper(conn)
-//
-//	message := "Hello World!"
-//	err = conn.WriteMessage(websocket.TextMessage, []byte(message))
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to send message", err)
-//	}
-//
-//	_, res, err := conn.ReadMessage()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to recv message", err)
-//	}
-//
-//	errRes := fiber.NewError(int(data.WsError.InvalidRequestBody))
-//	expected, err := json.Marshal(errRes)
-//	if err != nil {
-//		log.Println("TEST ERR -->> failed to create json from err", err)
-//		return
-//	}
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerPromptsForUsername(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	defer conn.Close()
-//	if err != nil {
-//		return
-//	}
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerPromptsInvalidRequestTypeCorrectBody(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn.Close()
-//
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.NoError(t, err)
-//	assert.Equal(t, expected, res)
-//
-//	req := fiber.Map{
-//		"type": "asfd",
-//		"body": fiber.Map{
-//			"username": "user",
-//		},
-//	}
-//
-//	err = conn.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	err = conn.ReadJSON(&res)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":    data.WsErrorType(data.WsError.InvalidRequestBody),
-//		"message": data.WsErrorMessage(data.WsError.InvalidRequestBody),
-//	}
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerUsernameRequestValidTypeInvalidBody(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn.Close()
-//
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.NoError(t, err)
-//	assert.Equal(t, expected, res)
-//
-//	req := fiber.Map{
-//		"type": data.MessageTypes.Username,
-//		"body": fiber.Map{
-//			"asf": "username",
-//		},
-//	}
-//
-//	err = conn.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	err = conn.ReadJSON(&res)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":    data.WsErrorType(data.WsError.InvalidRequestBody),
-//		"message": data.WsErrorMessage(data.WsError.InvalidRequestBody),
-//	}
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerUsernameShouldJoin(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5420/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn.Close()
-//
-//	assert.Equal(t, 100, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.NoError(t, err)
-//	assert.Equal(t, expected, res)
-//
-//	req := fiber.Map{
-//		"type": "Username",
-//		"body": fiber.Map{
-//			"username": "user",
-//		},
-//	}
-//
-//	err = conn.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	err = conn.ReadJSON(&res)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":     data.MessageTypes.PeerJoined,
-//		"username": "user",
-//	}
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerUserLeaveMessage(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5420/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn.Close()
-//	conn2, _, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn2.Close()
-//
-//	assert.Equal(t, 100, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.NoError(t, err)
-//	assert.Equal(t, expected, res)
-//
-//	req := fiber.Map{
-//		"type": "Username",
-//		"body": fiber.Map{
-//			"username": "user",
-//		},
-//	}
-//
-//	err = conn.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	err = conn.ReadJSON(&res)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":     data.MessageTypes.PeerJoined,
-//		"username": "user",
-//	}
-//	assert.Equal(t, expected, res)
-//
-//	req = fiber.Map{
-//		"type": "Username",
-//		"body": fiber.Map{
-//			"username": "user2",
-//		},
-//	}
-//
-//	err = conn2.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":     data.MessageTypes.PeerLeft,
-//		"username": "user",
-//	}
-//
-//	err = conn2.ReadJSON(res)
-//	if err != nil {
-//		return
-//	}
-//
-//	conn.Close()
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
+// UC5 - Username
+func TestDuplicateUsernameErrorTwoUsersSameName(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	// FRED GOES THROUGH THE JOIN PROCESS
+	joinRoomHelper(fred, "Fred")
+
+	fred2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	_, _, _ = fred2.ReadMessage()
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Username,
+		Body: make(map[string]string),
+	}
+	joinMessage.Body["username"] = "Fred"
+	err = fred2.WriteJSON(joinMessage)
+
+	_, duplicate, err := fred2.ReadMessage()
+	assert.NoError(t, err)
+	duplicateMessage := data.Message{}
+	err = utils.MapJsonToStruct(duplicate, &duplicateMessage)
+	assert.NoError(t, err)
+
+	assert.Equal(t, data.MessageTypes.DuplicateUsername, duplicateMessage.Type)
+	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
+}
+
 //func TestWsHandlerUserShouldReturnDuplicateUsernameError(t *testing.T) {
 //	app, done := runTestApp()
 //	defer app.Shutdown()

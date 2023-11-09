@@ -61,10 +61,12 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 
 		if u, _ := wh.us.GetUserByName(username); u != nil || msg.Type != data.MessageTypes.Username {
 			err := data.UserStoreError.DuplicateUsername
-			msg := fiber.Map{
-				"type":    err,
-				"message": data.UserStoreErrMessage(err),
+			msg := &data.Message{
+				Type: data.MessageTypes.DuplicateUsername,
+				Body: make(map[string]string),
 			}
+			msg.Body["message"] = data.UserStoreErrMessage(err)
+
 			_ = wh.msg.InvalidMessage(msg)
 			username = ""
 		}

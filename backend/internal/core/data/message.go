@@ -14,25 +14,27 @@ type Message struct {
 type MessageType string
 
 var MessageTypes = struct {
-	Offer           MessageType
-	Answer          MessageType
-	NewIceCandidate MessageType
-	PeerJoined      MessageType
-	PeerLeft        MessageType
-	PeerUpdated     MessageType
-	Peers           MessageType
-	Username        MessageType
-	UsernamePrompt  MessageType
-	InvalidMessage  MessageType
+	Offer             MessageType
+	Answer            MessageType
+	NewIceCandidate   MessageType
+	PeerJoined        MessageType
+	PeerLeft          MessageType
+	PeerUpdated       MessageType
+	Peers             MessageType
+	Username          MessageType
+	UsernamePrompt    MessageType
+	InvalidMessage    MessageType
+	DuplicateUsername MessageType
 }{
-	Offer:           "Offer",
-	Answer:          "Answer",
-	NewIceCandidate: "NewIceCandidate",
-	PeerJoined:      "PeerJoined",
-	PeerLeft:        "PeerLeft",
-	PeerUpdated:     "PeerUpdated",
-	Peers:           "Peers",
-	Username:        "Username",
-	UsernamePrompt:  "UsernamePrompt",
-	InvalidMessage:  "InvalidMessage",
+	Offer:             "Offer",
+	Answer:            "Answer",
+	NewIceCandidate:   "NewIceCandidate",
+	PeerJoined:        "PeerJoined",
+	PeerLeft:          "PeerLeft",
+	PeerUpdated:       "PeerUpdated",
+	Peers:             "Peers",
+	Username:          "Username",
+	UsernamePrompt:    "UsernamePrompt",
+	InvalidMessage:    "InvalidMessage",
+	DuplicateUsername: "DuplicateUsername",
 }
