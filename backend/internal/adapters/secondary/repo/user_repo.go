@@ -3,6 +3,7 @@ package repo
 import (
 	"fmt"
 	"laurensdrop/internal/core/data"
+	"strings"
 )
 
 type UserRepoInMemory struct {
@@ -18,18 +19,18 @@ func NewUserRepoInMemory() *UserRepoInMemory {
 }
 
 func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
-	_, exists := s.Users[u.Username]
+	_, exists := s.Users[strings.ToUpper(u.Username)]
 	if exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.DuplicateUsername))
 	}
 
-	s.Users[u.Username] = u
+	s.Users[strings.ToUpper(u.Username)] = u
 	s.Conns[u.Connection] = u
 	return u, nil
 }
 
 func (s *UserRepoInMemory) GetUserByName(username string) (*data.User, error) {
-	user, exists := s.Users[username]
+	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
 	}
@@ -47,7 +48,7 @@ func (s *UserRepoInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
 }
 
 func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
-	user, exists := s.Users[username]
+	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
 	}
@@ -66,12 +67,12 @@ func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*dat
 }
 
 func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
-	user, exists := s.Users[username]
+	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
 		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
 	}
 
-	delete(s.Users, username)
+	delete(s.Users, strings.ToUpper(username))
 	delete(s.Conns, user.Connection)
 
 	return s.GetAllUsers()

@@ -377,6 +377,37 @@ func TestDuplicateUsernameErrorTwoUsersSameName(t *testing.T) {
 	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
 }
 
+// UC5 - Username
+func TestDuplicateUsernameErrorTwoUsersDifferentCapitalization(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	// FRED GOES THROUGH THE JOIN PROCESS
+	joinRoomHelper(fred, "Fred")
+
+	fred2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	_, _, _ = fred2.ReadMessage()
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Username,
+		Body: make(map[string]string),
+	}
+	joinMessage.Body["username"] = "fred"
+	err = fred2.WriteJSON(joinMessage)
+
+	_, duplicate, err := fred2.ReadMessage()
+	assert.NoError(t, err)
+	duplicateMessage := data.Message{}
+	err = utils.MapJsonToStruct(duplicate, &duplicateMessage)
+	assert.NoError(t, err)
+
+	assert.Equal(t, data.MessageTypes.DuplicateUsername, duplicateMessage.Type)
+	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
+}
+
 //func TestWsHandlerUserShouldReturnDuplicateUsernameError(t *testing.T) {
 //	app, done := runTestApp()
 //	defer app.Shutdown()
