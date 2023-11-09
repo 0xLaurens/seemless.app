@@ -1,25 +1,44 @@
 package handlers
 
 import (
-	"laurensdrop/internal/adapters/primary/web"
+	"fmt"
+	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/fiber/v2"
+	"github.com/stretchr/testify/assert"
 	"laurensdrop/internal/adapters/secondary/repo"
 	"laurensdrop/internal/core/services"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
-func setupTestApp() *web.App {
+const TestPort = 6611
+
+func setupTestApp() *fiber.App {
 	// init in memory user repo & other services
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
 	ws := NewWebsocketHandler(us)
 
-	app := web.NewApp(ws, web.WithPort(6611))
+	app := fiber.New()
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hi mom!")
+	})
+
+	app.Use("/ws", ws.UpgradeWebsocket)
+	app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
+		_ = ws.HandleWebsocket(conn)
+	}))
+
+	go app.Listen(fmt.Sprintf(":%d", TestPort))
 
 	readyCh := make(chan struct{})
 
 	go func() {
 		for {
-			conn, err := net.Dial("tcp", "localhost:6611")
+			address := fmt.Sprintf("localhost:%d", TestPort)
+			conn, err := net.Dial("tcp", address)
 			if err != nil {
 				continue
 			}
@@ -37,47 +56,18 @@ func setupTestApp() *web.App {
 	return app
 }
 
-//
-//func runTestApp() (*fiber.App, chan struct{}) {
-//	app := setupTestApp()
-//	done := make(chan struct{})
-//	go func() {
-//		err := app.Listen(":5421")
-//		if err != nil {
-//			return
-//		}
-//	}()
-//
-//	go func() {
-//		time.Sleep(100 * time.Millisecond)
-//		close(done)
-//	}()
-//
-//	return app, done
-//}
-//
-//// joinHelper joins websocket with identification
-//func joinHelper(conn *ws.Conn) {
-//	req := fiber.Map{
-//		"type": data.MessageTypes.Username,
-//		"body": fiber.Map{
-//			"username": "test_kees",
-//		},
-//	}
-//
-//	err := conn.WriteJSON(req)
-//	if err != nil {
-//		return
-//	}
-//
-//	_, _, err = conn.ReadMessage()
-//	_, _, err = conn.ReadMessage()
-//	_, _, err = conn.ReadMessage()
-//	if err != nil {
-//		return
-//	}
-//}
-//
+func TestInvalidWebsocketRequestShouldReturnUpgradeRequired(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	req := httptest.NewRequest(http.MethodTrace, "/ws", nil)
+	resp, err := app.Test(req)
+	fmt.Println(resp, err)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "426 Upgrade Required", resp.Status)
+}
+
 //func TestInvalidWebsocketRequestShouldReturnUpgradeRequired(t *testing.T) {
 //	app := setupTestApp()
 //	req := httptest.NewRequest(http.MethodTrace, "/ws", nil)
