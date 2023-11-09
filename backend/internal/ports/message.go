@@ -11,7 +11,7 @@ type MessageService interface {
 	Send(msg *data.Message) error
 	SendJSON(json interface{}) error
 	Broadcast(msg *data.Message) error
-	InvalidMessage() error
+	InvalidMessage(msg interface{}) error
 	SetWebsocketMsgNotifierConn(conn *websocket.Conn)
 }
 
