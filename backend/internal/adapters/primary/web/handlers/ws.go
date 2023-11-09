@@ -49,17 +49,13 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		msg, err := ReadMessage(c)
 		if err != nil {
 			log.Println("ERR -->> read message", err)
+			_ = wh.msg.InvalidMessage(nil)
 			return err
 		}
 
 		username = msg.Body["username"]
 		if username == "" || msg.Type != data.MessageTypes.Username {
-			err := data.WsError.InvalidRequestBody
-			msg := fiber.Map{
-				"type":    data.WsErrorType(err),
-				"message": data.WsErrorMessage(err),
-			}
-			_ = wh.msg.InvalidMessage(msg)
+			_ = wh.msg.InvalidMessage(nil)
 			username = ""
 		}
 
