@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 const (
@@ -31,7 +32,7 @@ func setupTestApp() *fiber.App {
 	us := services.NewUserService(ur)
 	wh := NewWebsocketHandler(us)
 
-	app := fiber.New(fiber.Config{DisableStartupMessage: true})
+	app := fiber.New(fiber.Config{DisableStartupMessage: true, IdleTimeout: 600000})
 
 	app.Use("/ws", wh.UpgradeWebsocket)
 	app.Use("/ws", websocket.New(func(conn *websocket.Conn) {
@@ -408,162 +409,86 @@ func TestDuplicateUsernameErrorTwoUsersDifferentCapitalization(t *testing.T) {
 	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
 }
 
-//func TestWsHandlerUserShouldReturnDuplicateUsernameError(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5420/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn.Close()
-//	conn2, _, err := ws.DefaultDialer.Dial(url, nil)
-//	if err != nil {
-//		return
-//	}
-//	defer conn2.Close()
-//
-//	assert.Equal(t, 100, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//
-//	expected := fiber.Map{
-//		"message": "provide a username",
-//		"type":    "UsernamePrompt",
-//	}
-//	var res fiber.Map
-//	err = conn.ReadJSON(&res)
-//
-//	assert.NoError(t, err)
-//	assert.Equal(t, expected, res)
-//
-//	req := fiber.Map{
-//		"type": "Username",
-//		"body": fiber.Map{
-//			"username": "user",
-//		},
-//	}
-//
-//	err = conn.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	err = conn.ReadJSON(&res)
-//	assert.NoError(t, err)
-//
-//	expected = fiber.Map{
-//		"type":     data.MessageTypes.PeerJoined,
-//		"username": "user",
-//	}
-//	assert.Equal(t, expected, res)
-//
-//	err = conn2.WriteJSON(req)
-//	assert.NoError(t, err)
-//
-//	duErr := data.UserStoreError.DuplicateUsername
-//	expected = fiber.Map{
-//		"type":    duErr,
-//		"message": data.UserStoreErrMessage(duErr),
-//	}
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerInvalidStatusToReturnInvalidRequest(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	defer conn.Close()
-//	if err != nil {
-//		return
-//	}
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//	joinHelper(conn)
-//
-//	message, err := json.Marshal(data.Message{
-//		Type: "NonExistentType",
-//	})
-//
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to marshal request", err)
-//	}
-//
-//	err = conn.WriteMessage(websocket.TextMessage, message)
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to send message", err)
-//	}
-//
-//	_, res, err := conn.ReadMessage()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to recv message", err)
-//	}
-//
-//	errRes := fiber.NewError(int(data.WsError.InvalidRequestBody))
-//	expected, err := json.Marshal(errRes)
-//	if err != nil {
-//		log.Println("TEST ERR -->> failed to create json from err", err)
-//		return
-//	}
-//
-//	assert.Equal(t, expected, res)
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
-//
-//func TestWsHandlerRequestTypesShouldBroadcast(t *testing.T) {
-//	app, done := runTestApp()
-//	defer app.Shutdown()
-//	<-done
-//
-//	url := "ws://localhost:5421/ws"
-//	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
-//	defer conn.Close()
-//	if err != nil {
-//		return
-//	}
-//	assert.Equal(t, 101, resp.StatusCode)
-//	assert.Equal(t, "websocket", resp.Header.Get("Upgrade"))
-//	joinHelper(conn)
-//
-//	types := []data.MessageType{
-//		data.MessageTypes.PeerJoined,
-//		data.MessageTypes.PeerLeft,
-//		data.MessageTypes.PeerUpdated,
-//		data.MessageTypes.NewIceCandidate,
-//		data.MessageTypes.Answer,
-//		data.MessageTypes.Offer,
-//	}
-//	for _, request := range types {
-//		message, err := json.Marshal(data.Message{
-//			Type: request,
-//		})
-//		if err != nil {
-//			t.Fatal("TEST ERR -->> failed to marshal request", err)
-//		}
-//		err = conn.WriteMessage(websocket.TextMessage, message)
-//		if err != nil {
-//			t.Fatal("TEST ERR -->> failed to send message", err)
-//		}
-//		_, res, err := conn.ReadMessage()
-//		if err != nil {
-//			t.Fatal("TEST ERR -->> failed to recv message", err)
-//		}
-//		assert.Equal(t, string(message), string(res))
-//	}
-//
-//	err = app.Shutdown()
-//	if err != nil {
-//		t.Fatal("TEST ERR -->> failed to shutdown server", err)
-//	}
-//}
+func TestSelectiveForwardingToUser(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(fred, "Fred")
+
+	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(joe, "Joe")
+
+	harry, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(harry, "Harry")
+
+	mockIce := data.Message{
+		Type: data.MessageTypes.NewIceCandidate,
+		Candidate: &data.RTCIceCandidate{
+			Candidate:        "SDP PROTOCOL",
+			SdpMid:           "MID",
+			SdpMLineIndex:    0,
+			UsernameFragment: "u89432",
+		},
+		From:   "Fred",
+		Target: "Harry",
+	}
+	err = fred.WriteJSON(mockIce)
+	assert.NoError(t, err)
+
+	_, iceOffer, err := harry.ReadMessage()
+	iceOfferMessage := &data.Message{}
+	err = utils.MapJsonToStruct(iceOffer, &iceOfferMessage)
+	assert.Equal(t, mockIce, *iceOfferMessage)
+
+	//peer joined
+	_, _, _ = joe.ReadMessage()
+
+	msgChannel := make(chan string)
+	go func() {
+		_, message, _ := joe.ReadMessage()
+		msgChannel <- string(message)
+	}()
+
+	select {
+	case <-time.After(500 * time.Millisecond):
+		break
+	case message := <-msgChannel:
+		t.Errorf("Received %s whilst joe should have received anything", message)
+	}
+}
+
+// TODO: FIX SPOOFING
+func TestFakeFromMessage(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(fred, "Fred")
+
+	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(joe, "Joe")
+
+	harry, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	joinRoomHelper(harry, "Harry")
+
+	mockIce := data.Message{
+		Type: data.MessageTypes.NewIceCandidate,
+		Candidate: &data.RTCIceCandidate{
+			Candidate:        "SDP PROTOCOL",
+			SdpMid:           "MID",
+			SdpMLineIndex:    0,
+			UsernameFragment: "u89432",
+		},
+		From:   "Fred",
+		Target: "Harry",
+	}
+	err = joe.WriteJSON(mockIce)
+	assert.NoError(t, err)
+}
