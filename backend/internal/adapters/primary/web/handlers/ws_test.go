@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	ws "github.com/fasthttp/websocket"
 	"github.com/gofiber/contrib/websocket"
@@ -153,10 +152,8 @@ func TestUserSelectUsername(t *testing.T) {
 	assert.Equal(t, data.MessageTypes.PeerJoined, responseJoinMessage.Type)
 }
 
-func TestUserSelectUsernameInvalidRequest(t *testing.T) {
-}
-
-func TestInvalidJsonToReturnInvalidRequest(t *testing.T) {
+// UC5 - account alias
+func TestUserSelectUsernameInvalidJsonRequest(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
 
@@ -164,21 +161,76 @@ func TestInvalidJsonToReturnInvalidRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 
-	message := "Hi mom!"
-	err = conn.WriteMessage(websocket.TextMessage, []byte(message))
+	// UsernamePrompt
+	_, _, err = conn.ReadMessage()
 	assert.NoError(t, err)
 
-	_, res, err := conn.ReadMessage()
+	joinMessage := "Hi mom!"
+	err = conn.WriteMessage(ws.TextMessage, []byte(joinMessage))
 	assert.NoError(t, err)
 
-	invalidError := fiber.Map{
-		"status": data.WsErrorType(data.WsError.InvalidRequestBody),
-		"body":   data.WsErrorMessage(data.WsError.InvalidRequestBody),
+	_, invalidRequest, err := conn.ReadMessage()
+	invalidMessage := data.Message{}
+	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
+
+	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
+	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
+}
+
+// UC5 - account alias
+func TestUserSelectUsernameJsonWrongType(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	// UsernamePrompt
+	_, _, err = conn.ReadMessage()
+	assert.NoError(t, err)
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Answer,
+		Body: make(map[string]string),
 	}
-	expectedError, err := json.Marshal(invalidError)
+	joinMessage.Body["username"] = "Johny"
+	err = conn.WriteJSON(joinMessage)
 	assert.NoError(t, err)
 
-	assert.Equal(t, expectedError, res)
+	_, invalidRequest, err := conn.ReadMessage()
+	invalidMessage := data.Message{}
+	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
+
+	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
+	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
+}
+
+func TestUserSelectUsernameWrongBody(t *testing.T) {
+	app := setupTestApp()
+	defer app.Shutdown()
+
+	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	// UsernamePrompt
+	_, _, err = conn.ReadMessage()
+	assert.NoError(t, err)
+
+	joinMessage := data.Message{
+		Type: data.MessageTypes.Username,
+		Body: make(map[string]string),
+	}
+	err = conn.WriteJSON(joinMessage)
+	assert.NoError(t, err)
+
+	_, invalidRequest, err := conn.ReadMessage()
+	invalidMessage := data.Message{}
+	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
+
+	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
+	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
 }
 
 //func TestWsHandlerInvalidJsonToReturnInvalidRequest(t *testing.T) {
