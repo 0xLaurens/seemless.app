@@ -7,14 +7,16 @@ import (
 )
 
 type MessageService struct {
-	users    ports.UserService
-	notifier ports.MessageNotifier
+	users     ports.UserService
+	notifier  ports.MessageNotifier
+	validator ports.MessageValidator
 }
 
-func NewMessageService(us ports.UserService, notifier ports.MessageNotifier) *MessageService {
+func NewMessageService(us ports.UserService, notifier ports.MessageNotifier, validator ports.MessageValidator) *MessageService {
 	return &MessageService{
-		users:    us,
-		notifier: notifier,
+		users:     us,
+		notifier:  notifier,
+		validator: validator,
 	}
 }
 
@@ -41,6 +43,11 @@ func (m *MessageService) Broadcast(msg *data.Message) error {
 	}
 	if msg.Target != "" {
 		target, err := m.users.GetUserByName(msg.Target)
+		if err != nil {
+			return err
+		}
+
+		err = m.validator.ValidateMessageOrigin(msg)
 		if err != nil {
 			return err
 		}
