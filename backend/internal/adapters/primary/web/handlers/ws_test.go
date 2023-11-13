@@ -311,7 +311,7 @@ func TestPeersJoinMessageSentOnlyToNewestUser(t *testing.T) {
 	_, joinJoe, err := fred.ReadMessage()
 	joinJoeMessage := data.Message{}
 	err = utils.MapJsonToStruct(joinJoe, &joinJoeMessage)
-	expectedUser := data.CreateUser("Joe", "android")
+	expectedUser := data.CreateUser("Joe", "")
 	assert.Equal(t, expectedUser, joinJoeMessage.User)
 	assert.Equal(t, data.MessageTypes.PeerJoined, joinJoeMessage.Type)
 }
