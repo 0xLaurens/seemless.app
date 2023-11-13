@@ -28,3 +28,7 @@ type MessageNotifier interface {
 	InvalidMessage(msg interface{}) error
 	SetWebsocketMsgNotifierConn(conn *websocket.Conn)
 }
+
+type MessageValidator interface {
+	ValidateMessageOrigin(msg *data.Message) error
+}

@@ -10,6 +10,7 @@ import (
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/core/services"
 	"laurensdrop/internal/core/utils"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -311,7 +312,7 @@ func TestPeersJoinMessageSentOnlyToNewestUser(t *testing.T) {
 	_, joinJoe, err := fred.ReadMessage()
 	joinJoeMessage := data.Message{}
 	err = utils.MapJsonToStruct(joinJoe, &joinJoeMessage)
-	expectedUser := data.CreateUser("Joe", "android")
+	expectedUser := data.CreateUser("Joe", "")
 	assert.Equal(t, expectedUser, joinJoeMessage.User)
 	assert.Equal(t, data.MessageTypes.PeerJoined, joinJoeMessage.Type)
 }
@@ -461,7 +462,6 @@ func TestSelectiveForwardingToUser(t *testing.T) {
 	}
 }
 
-// TODO: FIX SPOOFING
 func TestFakeFromMessage(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
@@ -491,4 +491,30 @@ func TestFakeFromMessage(t *testing.T) {
 	}
 	err = joe.WriteJSON(mockIce)
 	assert.NoError(t, err)
+
+	msgChannel := make(chan *data.Message)
+	go func() {
+		_, message, _ := harry.ReadMessage()
+		msg := data.Message{}
+		_ = utils.MapJsonToStruct(message, &msg)
+		msgChannel <- &msg
+	}()
+
+	select {
+	case <-time.After(500 * time.Millisecond):
+		log.Println("DBG -->>", "Harry did not receive spoofed message")
+		break
+	case message := <-msgChannel:
+		if message.Type == data.MessageTypes.NewIceCandidate {
+			t.Errorf("Received %v whilst harry shouldn't receive a spoofed message", message)
+		}
+	}
+
+	_, _, _ = joe.ReadMessage()
+	_, message, err := joe.ReadMessage()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	assert.Equal(t, "close 1008 (policy violation): Message Spoofing", string(message))
 }

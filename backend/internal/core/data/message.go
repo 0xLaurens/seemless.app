@@ -1,5 +1,7 @@
 package data
 
+import "github.com/gofiber/contrib/websocket"
+
 type Message struct {
 	Type      MessageType       `json:"type"`
 	From      string            `json:"from,omitempty"`
@@ -9,6 +11,7 @@ type Message struct {
 	SDP       string            `json:"sdp,omitempty"`
 	Candidate *RTCIceCandidate  `json:"candidate,omitempty"`
 	Body      map[string]string `json:"body,omitempty"`
+	Conn      *websocket.Conn   `json:"-"`
 }
 
 type MessageType string
