@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/mssola/user_agent"
 	"laurensdrop/internal/adapters/secondary"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/core/services"
@@ -31,6 +32,9 @@ func (wh *WebsocketHandler) UpgradeWebsocket(c *fiber.Ctx) error {
 }
 
 func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
+	log.Println()
+	ua := user_agent.New(c.Headers("User-Agent"))
+	os := ua.OSInfo().Name
 	wh.msg.SetWebsocketMsgNotifierConn(c)
 	username := ""
 	usernamePrompt := data.Message{
@@ -84,7 +88,7 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		return err
 	}
 
-	user := data.CreateUser(username, "android", data.WithConnection(c))
+	user := data.CreateUser(username, os, data.WithConnection(c))
 	_, err = wh.us.AddUser(user)
 	if err != nil {
 		return err
