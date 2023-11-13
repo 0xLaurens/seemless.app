@@ -3,18 +3,19 @@ package repo
 import (
 	"fmt"
 	"laurensdrop/internal/core/data"
+	"net"
 	"strings"
 )
 
 type UserRepoInMemory struct {
-	Users map[string]*data.User    //username -> user
-	Conns map[data.Conn]*data.User //ws conn -> user
+	Users map[string]*data.User          //username -> user
+	Conns map[data.RemoteAddr]*data.User //ws conn -> user
 }
 
 func NewUserRepoInMemory() *UserRepoInMemory {
 	return &UserRepoInMemory{
 		Users: map[string]*data.User{},
-		Conns: map[data.Conn]*data.User{},
+		Conns: map[data.RemoteAddr]*data.User{},
 	}
 }
 
@@ -25,7 +26,11 @@ func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 	}
 
 	s.Users[strings.ToUpper(u.Username)] = u
-	s.Conns[u.Connection] = u
+
+	// cast is allowed since this interface is always equal to TCPAddr
+	remoteAddr := u.Connection.Conn.RemoteAddr().(*net.TCPAddr)
+
+	s.Conns[remoteAddr] = u
 	return u, nil
 }
 
@@ -38,8 +43,8 @@ func (s *UserRepoInMemory) GetUserByName(username string) (*data.User, error) {
 	return user, nil
 }
 
-func (s *UserRepoInMemory) GetUserByConn(conn data.Conn) (*data.User, error) {
-	user, exists := s.Conns[conn]
+func (s *UserRepoInMemory) GetUserByAddr(addr data.RemoteAddr) (*data.User, error) {
+	user, exists := s.Conns[addr]
 	if !exists {
 		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
 	}
@@ -71,9 +76,10 @@ func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
 	if !exists {
 		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
 	}
+	remoteAddr := user.Connection.Conn.RemoteAddr().(*net.TCPAddr)
 
 	delete(s.Users, strings.ToUpper(username))
-	delete(s.Conns, user.Connection)
+	delete(s.Conns, remoteAddr)
 
 	return s.GetAllUsers()
 }

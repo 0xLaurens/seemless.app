@@ -2,21 +2,25 @@ package data
 
 import (
 	"github.com/gofiber/contrib/websocket"
+	"net"
 )
 
 type Conn *websocket.Conn
+type RemoteAddr *net.TCPAddr
 type UserOption func(*User)
 
 type User struct {
-	Username   string `json:"username"`
-	Device     string `json:"device"`
-	Connection Conn   `json:"-"`
+	Username   string     `json:"username"`
+	Device     string     `json:"device"`
+	Connection Conn       `json:"-"`
+	RemoteAddr RemoteAddr `json:"-"`
 }
 
 // WithConnection helper function for create user to pass a connection
 func WithConnection(conn Conn) UserOption {
 	return func(u *User) {
 		u.Connection = conn
+		u.RemoteAddr = conn.Conn.RemoteAddr().(*net.TCPAddr)
 	}
 }
 

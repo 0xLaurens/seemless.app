@@ -19,8 +19,8 @@ func (us *UserService) AddUser(User *data.User) (*data.User, error) {
 	return us.repo.AddUser(User)
 }
 
-func (us *UserService) GetUserByConn(conn data.Conn) (*data.User, error) {
-	return us.repo.GetUserByConn(conn)
+func (us *UserService) GetUserByAddr(addr data.RemoteAddr) (*data.User, error) {
+	return us.repo.GetUserByAddr(addr)
 }
 
 func (us *UserService) GetUserByName(username string) (*data.User, error) {
