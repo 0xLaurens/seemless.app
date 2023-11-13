@@ -19,8 +19,11 @@ type WebsocketHandler struct {
 
 func NewWebsocketHandler(us ports.UserRepo) *WebsocketHandler {
 	return &WebsocketHandler{
-		us:  services.NewUserService(us),
-		msg: services.NewMessageService(us, secondary.NewWebsocketMsgNotifier()),
+		us: services.NewUserService(us),
+		msg: services.NewMessageService(us,
+			secondary.NewWebsocketMsgNotifier(),
+			secondary.NewWebsocketMessageValidator(us),
+		),
 	}
 }
 
@@ -32,7 +35,6 @@ func (wh *WebsocketHandler) UpgradeWebsocket(c *fiber.Ctx) error {
 }
 
 func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
-	log.Println()
 	ua := user_agent.New(c.Headers("User-Agent"))
 	os := ua.OSInfo().Name
 	wh.msg.SetWebsocketMsgNotifierConn(c)
@@ -94,7 +96,7 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		return err
 	}
 
-	defer wh.wsDefer(user)
+	defer wh.wsDefer(user, c)
 
 	err = wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerJoined, User: user, From: username})
 	if err != nil {
@@ -113,7 +115,11 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 			return err
 		}
 		log.Println("DBG -->>", msg.Type, msg.SDP)
-		wh.WsRequestHandler(msg)
+		err = wh.WsRequestHandler(msg, c)
+		if err != nil {
+			log.Println("ERR -->> readloop", err)
+			return err
+		}
 	}
 }
 
@@ -132,9 +138,13 @@ func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
 	return message, nil
 }
 
-func (wh *WebsocketHandler) wsDefer(user *data.User) {
+func (wh *WebsocketHandler) wsDefer(user *data.User, conn *websocket.Conn) {
 	log.Println("DBG", "defer")
 	_, err := wh.us.RemoveUser(user.Username)
+	if err != nil {
+		return
+	}
+	err = conn.Close()
 	if err != nil {
 		return
 	}
@@ -146,7 +156,7 @@ func (wh *WebsocketHandler) wsDefer(user *data.User) {
 	}
 }
 
-func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
+func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, conn *websocket.Conn) error {
 	switch msg.Type {
 	case data.MessageTypes.Offer,
 		data.MessageTypes.Answer,
@@ -154,18 +164,19 @@ func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message) {
 		data.MessageTypes.PeerUpdated,
 		data.MessageTypes.PeerJoined,
 		data.MessageTypes.NewIceCandidate:
+		msg.Conn = conn
 		err := wh.msg.Broadcast(msg)
 		if err != nil {
-			log.Println("ERR ws handler", err)
-			return
+			log.Println("ERR -->> ws handler", err)
+			return err
 		}
-		break
+		return nil
 	default:
 		log.Println("ERR -->> invalid request")
 		err := wh.msg.InvalidMessage(nil)
 		if err != nil {
-			return
+			return err
 		}
-		break
+		return nil
 	}
 }
