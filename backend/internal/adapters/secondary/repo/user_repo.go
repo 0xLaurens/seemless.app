@@ -8,14 +8,14 @@ import (
 )
 
 type UserRepoInMemory struct {
-	Users map[string]*data.User          //username -> user
-	Conns map[data.RemoteAddr]*data.User //ws conn -> user
+	Users map[string]*data.User       //username -> user
+	Conns map[*net.TCPAddr]*data.User //ws conn -> user
 }
 
 func NewUserRepoInMemory() *UserRepoInMemory {
 	return &UserRepoInMemory{
-		Users: map[string]*data.User{},
-		Conns: map[data.RemoteAddr]*data.User{},
+		Users: make(map[string]*data.User),
+		Conns: make(map[*net.TCPAddr]*data.User),
 	}
 }
 
@@ -27,10 +27,12 @@ func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 
 	s.Users[strings.ToUpper(u.Username)] = u
 
-	// cast is allowed since this interface is always equal to TCPAddr
-	remoteAddr := u.Connection.Conn.RemoteAddr().(*net.TCPAddr)
+	if u.Connection != nil {
+		//cast is allowed since this interface is always equal to TCPAddr
+		remoteAddr := u.Connection.RemoteAddr().(*net.TCPAddr)
+		s.Conns[remoteAddr] = u
+	}
 
-	s.Conns[remoteAddr] = u
 	return u, nil
 }
 
@@ -76,10 +78,13 @@ func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
 	if !exists {
 		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
 	}
-	remoteAddr := user.Connection.Conn.RemoteAddr().(*net.TCPAddr)
+
+	if user.Connection != nil {
+		remoteAddr := user.Connection.Conn.RemoteAddr().(*net.TCPAddr)
+		delete(s.Conns, remoteAddr)
+	}
 
 	delete(s.Users, strings.ToUpper(username))
-	delete(s.Conns, remoteAddr)
 
 	return s.GetAllUsers()
 }
