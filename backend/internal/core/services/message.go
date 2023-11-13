@@ -58,5 +58,16 @@ func (m *MessageService) Broadcast(msg *data.Message) error {
 }
 
 func (m *MessageService) InvalidMessage(msg interface{}) error {
-	return m.notifier.InvalidMessage(msg)
+	if msg == nil {
+		invalid := data.Message{
+			Type: data.MessageTypes.InvalidMessage,
+			Body: make(map[string]string),
+		}
+
+		invalid.Body["message"] = data.WsErrorMessage(data.WsError.InvalidRequestBody)
+		return m.notifier.InvalidMessage(invalid)
+	} else {
+		return m.notifier.InvalidMessage(msg)
+	}
+
 }
