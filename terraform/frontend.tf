@@ -16,6 +16,6 @@ resource "aws_s3_bucket_website_configuration" "frontend-config" {
 }
 
 resource "aws_s3_bucket_policy" "static_website_policy" {
-  bucket         = aws_s3_bucket.frontend-vue.id
+  bucket = aws_s3_bucket.frontend-vue.id
   policy = templatefile("s3-policy.json", { bucket = var.s3_bucket_name })
 }
