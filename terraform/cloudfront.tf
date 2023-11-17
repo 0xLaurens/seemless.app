@@ -8,8 +8,8 @@ resource "aws_cloudfront_origin_access_control" "default" {
 
 resource "aws_cloudfront_distribution" "s3_distribution" {
   origin {
-    domain_name            = aws_s3_bucket.frontend_bucket.bucket_regional_domain_name
-    origin_id              = var.s3_origin_id
+    domain_name = aws_s3_bucket.frontend_bucket.bucket_regional_domain_name
+    origin_id   = var.s3_origin_id
 
     custom_origin_config {
       http_port              = 80
@@ -46,6 +46,13 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
   tags = {
     Environment = "production"
+  }
+
+  custom_error_response {
+    error_caching_min_ttl = 0
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
   }
 
   restrictions {
