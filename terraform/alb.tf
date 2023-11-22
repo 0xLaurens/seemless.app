@@ -1,10 +1,10 @@
 resource "aws_elb" "api_elb" {
-  name = "load-balancer-backend"
+  name            = "load-balancer-backend"
   subnets         = module.vpc.public_subnets
   security_groups = [aws_security_group.lb_sg.id]
 
   listener {
-    instance_port     = 5000
+    instance_port     = 3000
     instance_protocol = "http"
     lb_port           = 80
     lb_protocol       = "http"
