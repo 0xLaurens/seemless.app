@@ -1,4 +1,3 @@
-
 data "aws_ami" "amazon-linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -9,34 +8,41 @@ data "aws_ami" "amazon-linux" {
   }
 }
 
+resource "aws_launch_template" "ecs_lt" {
+  name_prefix   = "esc-lt"
+  image_id      = data.aws_ami.amazon-linux.id
+  instance_type = "t3a.micro"
 
-resource "aws_launch_configuration" "api_lc" {
-  name_prefix     = "api-lc"
-  image_id        = data.aws_ami.amazon-linux.id
-  instance_type   = "t3a.micro"
-  security_groups = [aws_security_group.ec2_sg.id]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_autoscaling_group" "api_asg" {
-  launch_configuration = aws_launch_configuration.api_lc.id
-  max_size             = 1
-  min_size             = 1
-  desired_capacity     = 1
-
-  health_check_grace_period = 300
-  health_check_type         = "ELB"
-  availability_zones        = module.vpc.azs
+  key_name = "ec2ecs"
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
   lifecycle {
     create_before_destroy = true
   }
+
+  user_data = filebase64("${path.module}/ecs.sh")
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "ecs-instance"
+    }
+  }
 }
 
-resource "aws_autoscaling_attachment" "asg_attachment" {
-  autoscaling_group_name = aws_autoscaling_group.api_asg.id
-  elb = aws_elb.api_elb.id
+resource "aws_autoscaling_group" "ecs_asg" {
+  vpc_zone_identifier       = module.vpc.public_subnets
+  desired_capacity = 1
+  max_size         = 1
+  min_size         = 1
+
+
+  launch_template {
+    id      = aws_launch_template.ecs_lt.id
+    version = "$Latest"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
