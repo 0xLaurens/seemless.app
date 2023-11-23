@@ -5,6 +5,9 @@ stages:
 backend-test:
   stage: test
   image: golang:latest
+  tags:
+    - aws
+    - linux
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       allow_failure: true
@@ -17,6 +20,9 @@ backend-qodana:
   image:
     name: jetbrains/qodana-go:latest
     entrypoint: [""]
+  tags:
+    - aws
+    - linux
   cache:
     - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
       fallback_keys:
@@ -33,6 +39,9 @@ backend-qodana:
 frontend-test:
   stage: test
   image: node:latest
+  tags:
+    - aws
+    - linux
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       allow_failure: true
@@ -46,6 +55,9 @@ frontend-qodana:
   image:
     name: jetbrains/qodana-js:latest
     entrypoint: [""]
+  tags:
+    - aws
+    - linux
   cache:
     - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
       fallback_keys:
