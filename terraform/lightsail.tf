@@ -1,10 +1,3 @@
-resource "aws_lightsail_instance" "lightsail_instance" {
-  name              = "lightsail_instance"
-  bundle_id         = "micro_3_0"
-  availability_zone = "eu-central-1a"
-  blueprint_id      = "amazon_linux_2023"
-}
-
 resource "aws_lightsail_container_service" "lightsail_container_service" {
   name  = "lightsail-container-service"
   power = "micro"

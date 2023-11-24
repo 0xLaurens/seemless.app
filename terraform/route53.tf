@@ -5,6 +5,11 @@ provider "aws" {
 
 resource "aws_route53_zone" "seemless-domain" {
   name = "seemless.app"
+
+  lifecycle {
+    # prevent destroy the dns has to be manually be reconfigured
+    prevent_destroy = true
+  }
 }
 
 resource "aws_acm_certificate" "cert" {
@@ -64,12 +69,3 @@ resource "aws_route53_record" "base" {
 
   depends_on = [aws_acm_certificate_validation.cert_validation]
 }
-
-#resource "aws_route53_record" "api" {
-#  zone_id = aws_route53_zone.seemless-domain.zone_id
-#  type    = "A"
-#  name    = "api.seemless.app"
-#  records = [aws_lightsail_instance.lightsail_instance.public_ip_address, "127.0.0.1"]
-#
-#  depends_on = [aws_acm_certificate_validation.cert_validation]
-#}
