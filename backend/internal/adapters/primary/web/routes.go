@@ -20,4 +20,7 @@ func (a *App) initAppRoutes(ws ports.MessageHandler) {
 		}
 	}))
 
+	a.fiber.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(200)
+	})
 }
