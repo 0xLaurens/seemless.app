@@ -43,7 +43,7 @@ resource "aws_lightsail_container_service_deployment_version" "lightsail_contain
   container {
     container_name = "seemless-backend"
     image          = "${aws_ecr_repository.container_repo.repository_url}:latest"
-    ports = {"3000" = "HTTP"}
+    ports          = { "3000" = "HTTP" }
   }
 
   public_endpoint {

@@ -8,9 +8,10 @@ resource "aws_route53_zone" "seemless-domain" {
 }
 
 resource "aws_acm_certificate" "cert" {
-  provider = aws.cloudfront-cert
-  domain_name       = "seemless.app"
-  validation_method = "DNS"
+  provider                  = aws.cloudfront-cert
+  domain_name               = "seemless.app"
+  validation_method         = "DNS"
+  subject_alternative_names = ["*.seemless.app"]
 }
 
 resource "aws_route53_record" "cert_record" {
@@ -31,9 +32,9 @@ resource "aws_route53_record" "cert_record" {
 }
 
 resource "aws_acm_certificate_validation" "cert_validation" {
-  provider = aws.cloudfront-cert
+  provider                = aws.cloudfront-cert
   certificate_arn         = aws_acm_certificate.cert.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_record: record.fqdn]
+  validation_record_fqdns = [for record in aws_route53_record.cert_record : record.fqdn]
 }
 
 resource "aws_route53_record" "www" {
@@ -64,12 +65,11 @@ resource "aws_route53_record" "base" {
   depends_on = [aws_acm_certificate_validation.cert_validation]
 }
 
-resource "aws_route53_record" "api" {
-  zone_id = aws_route53_zone.seemless-domain.zone_id
-  type    = "A"
-  name    = "api.seemless.app"
-  ttl     = 300
-  records = [aws_lightsail_instance.lightsail_instance.public_ip_address, "127.0.0.1"]
-
-  depends_on = [aws_acm_certificate_validation.cert_validation]
-}
+#resource "aws_route53_record" "api" {
+#  zone_id = aws_route53_zone.seemless-domain.zone_id
+#  type    = "A"
+#  name    = "api.seemless.app"
+#  records = [aws_lightsail_instance.lightsail_instance.public_ip_address, "127.0.0.1"]
+#
+#  depends_on = [aws_acm_certificate_validation.cert_validation]
+#}
