@@ -7,14 +7,16 @@ import (
 )
 
 type MessageService struct {
-	users    ports.UserService
-	notifier ports.MessageNotifier
+	users     ports.UserService
+	notifier  ports.MessageNotifier
+	validator ports.MessageValidator
 }
 
-func NewMessageService(us ports.UserService, notifier ports.MessageNotifier) *MessageService {
+func NewMessageService(us ports.UserService, notifier ports.MessageNotifier, validator ports.MessageValidator) *MessageService {
 	return &MessageService{
-		users:    us,
-		notifier: notifier,
+		users:     us,
+		notifier:  notifier,
+		validator: validator,
 	}
 }
 
@@ -45,6 +47,11 @@ func (m *MessageService) Broadcast(msg *data.Message) error {
 			return err
 		}
 
+		err = m.validator.ValidateMessageOrigin(msg)
+		if err != nil {
+			return err
+		}
+
 		return m.notifier.SendTargeted(msg, target)
 	}
 
@@ -58,5 +65,16 @@ func (m *MessageService) Broadcast(msg *data.Message) error {
 }
 
 func (m *MessageService) InvalidMessage(msg interface{}) error {
-	return m.notifier.InvalidMessage(msg)
+	if msg == nil {
+		invalid := data.Message{
+			Type: data.MessageTypes.InvalidMessage,
+			Body: make(map[string]string),
+		}
+
+		invalid.Body["message"] = data.WsErrorMessage(data.WsError.InvalidRequestBody)
+		return m.notifier.InvalidMessage(invalid)
+	} else {
+		return m.notifier.InvalidMessage(msg)
+	}
+
 }

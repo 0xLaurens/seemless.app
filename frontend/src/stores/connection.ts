@@ -65,14 +65,19 @@ export const useConnStore = defineStore('conn', () => {
                     break
                 }
                 case FileSetup.LatestOffer: {
-                    file.setCurrentOffer(offer)
+                    file.setReceiveOffer(offer)
                     break
+                }
+                case FileSetup.DownloadProgress: {
+                    file.setSendOffer(offer);
+                    break;
                 }
                 case FileSetup.Offer: {
                     download.addOffer(offer)
                     break
                 }
                 case FileSetup.AcceptOffer: {
+                    file.setSendOffer(offer)
                     const files = file.getOfferedFiles(offer.id)
                     if (files == undefined) {
                         console.log("something went wrong!")

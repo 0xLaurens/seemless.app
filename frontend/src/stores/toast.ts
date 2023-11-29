@@ -22,7 +22,7 @@ export const useToastStore = defineStore('toast', () => {
     toasts.value.push(toast)
   }
 
-  function freeze(timeoutId: number | undefined) {
+  function freeze(timeoutId: ReturnType<typeof setTimeout> | undefined) {
     if (!timeoutId) return
     clearTimeout(timeoutId)
   }

@@ -30,3 +30,7 @@ func NewApp(ws ports.MessageHandler, opts ...AppOptions) *App {
 func (a *App) Run() error {
 	return a.fiber.Listen(fmt.Sprintf(":%d", a.port))
 }
+
+func (a *App) Close() error {
+	return a.fiber.Shutdown()
+}
