@@ -1,6 +1,24 @@
 stages:
+  - build
   - test
   - qa
+  - deploy
+
+backend-build:
+  stage: build
+  tags:
+    - aws
+    - linux
+  script:
+    - cd backend
+    - docker build . -t $AWS_DOCKER_NAME
+    - docker save -o $AWS_DOCKER_NAME:latest.tar $AWS_DOCKER_NAME:latest
+  artifacts:
+    paths:
+      - backend/$AWS_DOCKER_NAME:latest.tar
+  only:
+    - main
+    - development
 
 backend-test:
   stage: test
@@ -8,33 +26,90 @@ backend-test:
   tags:
     - aws
     - linux
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      allow_failure: true
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - cd backend
     - go test -v ./... -count=1
 
-backend-qodana:
-  image:
-    name: jetbrains/qodana-go:latest
-    entrypoint: [""]
+#backend-qodana:
+#  image:
+#    name: jetbrains/qodana-go:latest
+#    entrypoint: [""]
+#  tags:
+#    - aws
+#    - linux_v7
+#  cache:
+#    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
+#      fallback_keys:
+#        - qodana-2023.2-$CI_DEFAULT_BRANCH-
+#        - qodana-2023.2-
+#      paths:
+#        - .qodana/cache
+#  variables:
+#    QODANA_TOKEN: $qodana_token
+#  script:
+#    - cp qodana-backend.yaml qodana.yaml
+#    - qodana --cache-dir=backend/.qodana/cache  --source-directory=backend --baseline=qodana-backend.sarif.json
+
+backend-deploy:
+  stage: deploy
+  needs:
+    - backend-build
+    - backend-test
   tags:
     - aws
     - linux
-  cache:
-    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
-      fallback_keys:
-        - qodana-2023.2-$CI_DEFAULT_BRANCH-
-        - qodana-2023.2-
-      paths:
-        - .qodana/cache
-  variables:
-    QODANA_TOKEN: $qodana_token
+  image:
+    name: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+    entrypoint: [""]
+  before_script:
+    - docker load -i backend/$AWS_DOCKER_NAME:latest.tar
+    - curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
+    - chmod +x /usr/local/bin/lightsailctl
   script:
-    - cp qodana-backend.yaml qodana.yaml
-    - qodana --cache-dir=$CI_PROJECT_DIR/.qodana/cache  --source-directory=backend --baseline=qodana-backend.sarif.json
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+    - docker images
+    - docker tag $AWS_DOCKER_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AWS_ECR_REPO:latest
+    - >
+      aws lightsail create-container-service-deployment 
+      --service-name $AWS_LIGHTSAIL_SERVICE 
+      --containers '{
+        "seemless-backend": {
+          "image": "'"$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AWS_ECR_REPO:latest"'",
+          "ports": {
+            "3000": "HTTP"
+          }
+        }
+      }' 
+      --public-endpoint '{
+        "containerName": "seemless-backend",
+        "containerPort": 3000,
+        "healthCheck": {
+          "path": "/health"
+        }
+      }'
+  only:
+    - main
+
+#######################################################################################################################
+###                                                  Frontend                                                       ###
+#######################################################################################################################
+frontend-build:
+  stage: build
+  image: node:latest
+  tags:
+    - aws
+    - linux
+  script:
+  - cd frontend
+  - npm install --progress=false
+  - npm run build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - frontend/dist
+  only:
+    - main
+    - development
 
 frontend-test:
   stage: test
@@ -42,31 +117,46 @@ frontend-test:
   tags:
     - aws
     - linux
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      allow_failure: true
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - cd frontend
     - npm install --progress=false
     - npm run test:unit
 
-frontend-qodana:
+#frontend-qodana:
+#  image:
+#    name: jetbrains/qodana-js:latest
+#    entrypoint: [""]
+#  tags:
+#    - aws
+#    - linux_v7
+#  cache:
+#    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
+#      fallback_keys:
+#        - qodana-2023.2-$CI_DEFAULT_BRANCH-
+#        - qodana-2023.2-
+#      paths:
+#        - .qodana/cache
+#  variables:
+#    QODANA_TOKEN: $qodana_token
+#  script:
+#    - cp qodana-frontend.yaml qodana.yaml
+#    - qodana --cache-dir=frontend/.qodana/cache --source-directory=frontend --baseline=qodana-frontend.sarif.json
+#  only:
+#    - development
+
+frontend-deploy:
+  needs:
+    - frontend-build
+    - frontend-test
+  stage: deploy
   image:
-    name: jetbrains/qodana-js:latest
+    name: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
     entrypoint: [""]
   tags:
     - aws
     - linux
-  cache:
-    - key: qodana-2023.2-$CI_DEFAULT_BRANCH-$CI_COMMIT_REF_SLUG
-      fallback_keys:
-        - qodana-2023.2-$CI_DEFAULT_BRANCH-
-        - qodana-2023.2-
-      paths:
-        - .qodana/cache
-  variables:
-    QODANA_TOKEN: $qodana_token
   script:
-    - cp qodana-frontend.yaml qodana.yaml
-    - qodana --cache-dir=$CI_PROJECT_DIR/.qodana/cache --source-directory=frontend --baseline=qodana-frontend.sarif.json
+    - aws s3 sync frontend/dist/ s3://$AWS_S3_BUCKET/
+    - aws cloudfront create-invalidation --distribution-id $AWS_CLOUDFRONT_ID --paths "/*"
+  only:
+    - main
