@@ -7,7 +7,7 @@ export const useRetryStore = defineStore('retry', () => {
   const MAX_TIMEOUT: number = 8000 //MAX MS between reload
 
   const attempts = ref(0)
-  const timer: Ref<number | undefined> = ref()
+  const timer: Ref<ReturnType<typeof setTimeout> | undefined> = ref(undefined)
 
   function start(fn: () => void) {
     if (isActive()) clearTimeout(timer.value)
