@@ -24,6 +24,13 @@ export const useDownloadStore = defineStore('download', () => {
         popup.value = false
     }
 
+    function purgeOffers(username: string) {
+        offers.value = offers.value.filter((offer) => offer.from === username)
+        if (activeOffer.value && activeOffer.value.from === username) {
+            setLatestOffer()
+        }
+    }
+
     function addOffer(offer: FileOffer) {
         offers.value.push(offer)
         setLatestOffer()
@@ -83,6 +90,7 @@ export const useDownloadStore = defineStore('download', () => {
         popup,
         url,
         activeDownload,
+        purgeOffers,
         open,
         close,
         addDownload,

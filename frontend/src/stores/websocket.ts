@@ -9,12 +9,14 @@ import {useConnStore} from '@/stores/connection'
 import {ToastType} from '@/models/toast'
 import router from '@/router'
 import {useRetryStore} from '@/stores/retry'
+import {useRoomStore} from "@/stores/room";
 
 export const useWebsocketStore = defineStore('ws', () => {
     const user = useUserStore()
     const conn = useConnStore()
     const toast = useToastStore()
     const retry = useRetryStore()
+    const room = useRoomStore()
 
     const ws: Ref<WebSocket | undefined> = ref()
     const intended_close: Ref<Boolean> = ref(false)
@@ -31,6 +33,7 @@ export const useWebsocketStore = defineStore('ws', () => {
 
     async function _onMessage(event: MessageEvent<any>) {
         const data = JSON.parse(event.data)
+        console.log("WS:", data)
         switch (data.type) {
             case RequestTypes.Offer: {
                 const answer = await conn.HandleRtcOffer(data)
@@ -46,11 +49,21 @@ export const useWebsocketStore = defineStore('ws', () => {
                 break
             }
             case RequestTypes.Peers:
-                user.initUsers(data.users)
+                if (!data.users) return
+                for (const newUser of data.users) {
+                    console.log(newUser.username, user.getUsername())
+                    user.addUser(newUser)
+                }
                 break
-            case RequestTypes.PeerJoined:
+            case RequestTypes.PeerJoined: {
+                if (data.user.username === user.getUsername()) return
                 user.addUser(data.user)
-                break
+                const offer = await conn.CreateRtcOffer(data.user.username)
+                if (offer) {
+                    SendMessage(offer)
+                }
+                break;
+            }
             case RequestTypes.PeerLeft:
                 user.removeUser(data.user)
                 break
@@ -64,6 +77,35 @@ export const useWebsocketStore = defineStore('ws', () => {
                 })
                 await router.push({path: '/nick'})
                 break
+            case RequestTypes.DisplayName:
+                user.setUsername(data.user.username)
+                break
+            case RequestTypes.PublicRoomCreated:
+                room.setRoomCode(data.roomCode)
+                break
+            case RequestTypes.PublicRoomIdInvalid:
+                // TODO: implement not room not found
+                break
+            case RequestTypes.PublicRoomJoin:
+                if (data.user.username === user.getUsername()) return
+                user.addUser(data.user)
+                const offer = await conn.CreateRtcOffer(data.user.username)
+                if (offer) {
+                    SendMessage(offer)
+                }
+                break
+            case RequestTypes.PublicRoomPeers:
+                if (!data.users) return
+                for (const newUser of data.users) {
+                    if (newUser.username == user.getUsername()) return
+                    user.addUser(newUser)
+                }
+                room.setRoomCode(data.roomCode)
+                break
+            case RequestTypes.PublicRoomLeft:
+                console.log(data.type, data.user)
+                user.removeUser(data.user)
+                break;
             default:
                 console.log(`Unknown type ${data.type}`)
         }
@@ -72,21 +114,21 @@ export const useWebsocketStore = defineStore('ws', () => {
     function _onOpen() {
         retry.stop()
         toast.notify({message: 'Connected to room', type: ToastType.Success})
-        const payload = {
-            type: 'Username',
-            body: {
-                username: user.getUsername()
-            }
-        }
-
-        ws.value?.send(JSON.stringify(payload))
+        // const payload = {
+        //     type: 'Username',
+        //     body: {
+        //         username: user.getUsername()
+        //     }
+        // }
+        //
+        // ws.value?.send(JSON.stringify(payload))
     }
 
     function _onClose() {
         if (retry.isActive()) return
         toast.notify({message: 'Disconnected from room', type: ToastType.Warning})
         if (intended_close.value) return
-
+        user.clearUsers()
         retry.start(() => {
             _reconnectWs()
         })

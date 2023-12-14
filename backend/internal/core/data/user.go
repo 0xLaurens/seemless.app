@@ -2,6 +2,8 @@ package data
 
 import (
 	"github.com/gofiber/contrib/websocket"
+	"github.com/google/uuid"
+	"laurensdrop/internal/core/utils"
 	"net"
 )
 
@@ -13,6 +15,8 @@ type User struct {
 	Device     string          `json:"device"`
 	Connection *websocket.Conn `json:"-"`
 	RemoteAddr RemoteAddr      `json:"-"`
+	PublicRoom uuid.UUID       `json:"-"`
+	LocalRoom  uuid.UUID       `json:"-"`
 }
 
 // WithConnection helper function for create user to pass a connection
@@ -23,10 +27,18 @@ func WithConnection(conn *websocket.Conn) UserOption {
 	}
 }
 
-func CreateUser(username string, device string, options ...UserOption) *User {
+func WithUsername(username string) UserOption {
+	return func(u *User) {
+		u.Username = username
+	}
+}
+
+func CreateUser(device string, options ...UserOption) *User {
 	user := &User{
-		Username: username,
-		Device:   device,
+		Username:   utils.GenerateRandomDisplayName(),
+		Device:     device,
+		PublicRoom: uuid.Nil,
+		LocalRoom:  uuid.Nil,
 	}
 
 	for _, option := range options {
@@ -50,4 +62,8 @@ func (u *User) UpdateUsername(Username string) {
 
 func (u *User) GetConnection() *websocket.Conn {
 	return u.Connection
+}
+
+func (u *User) GetIp() *net.IP {
+	return &u.RemoteAddr.IP
 }

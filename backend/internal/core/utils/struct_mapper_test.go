@@ -2,17 +2,21 @@ package utils
 
 import (
 	"encoding/json"
-	"laurensdrop/internal/core/data"
 	"testing"
 )
 
+type MessageMock struct {
+	Type string
+	From string
+}
+
 func TestValidJsonMapsToObject(t *testing.T) {
-	msg, _ := json.Marshal(data.Message{
+	msg, _ := json.Marshal(MessageMock{
 		Type: "PeerJoin",
 		From: "John",
 	})
 
-	req := &data.Message{}
+	req := &MessageMock{}
 
 	err := MapJsonToStruct(msg, req)
 	if err != nil {
@@ -25,11 +29,11 @@ func TestValidJsonMapsToObject(t *testing.T) {
 }
 
 func TestValidJsonMissingFieldsWorks(t *testing.T) {
-	msg, _ := json.Marshal(data.Message{
+	msg, _ := json.Marshal(MessageMock{
 		Type: "PeerJoin",
 	})
 
-	req := &data.Message{}
+	req := &MessageMock{}
 
 	err := MapJsonToStruct(msg, req)
 	if err != nil {
@@ -47,7 +51,7 @@ func TestValidJsonMissingFieldsWorks(t *testing.T) {
 func TestInvalidJsonThrowsErr(t *testing.T) {
 	msg, _ := json.Marshal("type: 'PeerLeave'")
 
-	req := &data.Message{}
+	req := &MessageMock{}
 
 	err := MapJsonToStruct(msg, req)
 	if err == nil {

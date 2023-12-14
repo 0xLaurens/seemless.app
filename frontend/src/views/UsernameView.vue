@@ -21,11 +21,6 @@ function selectNickname() {
     return
   }
 
-  if (username.value.length > 16) {
-    toast.notify({message: "Max length of username exceeded", type: ToastType.Warning})
-    return
-  }
-
   user.setUsername(username.value)
   router.push({path: '/room/local'})
 }

@@ -1,6 +1,6 @@
 <template>
   <div
-      @click="download.close()"
+@click="download.close()"
       class="fixed inset-0 z-50 flex items-center justify-center bg-gray-400/25 backdrop-filter backdrop-blur"
       v-if="download.popup"
       :aria-hidden="download.popup"
