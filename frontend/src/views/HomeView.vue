@@ -21,7 +21,7 @@ let imageSrc =
           <button class="btn btn-md font-normal btn-square btn-neutral normal-case" aria-label="">
             <info-icon/>
           </button>
-          <router-link class="btn btn-md font-normal btn-accent normal-case" to="/nick">Start Sharing</router-link>
+          <router-link class="btn btn-md font-normal btn-accent normal-case" to="/room/local">Start Sharing</router-link>
         </div>
       </div>
       <div class="lg:w-1/2">

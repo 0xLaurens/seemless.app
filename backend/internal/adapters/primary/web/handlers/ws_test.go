@@ -31,7 +31,11 @@ func setupTestApp() *fiber.App {
 	// init in memory user repo & other services
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := NewWebsocketHandler(us, rs)
 
 	app := fiber.New(fiber.Config{DisableStartupMessage: true, IdleTimeout: 600000})
 
@@ -71,7 +75,7 @@ func setupTestApp() *fiber.App {
 func joinRoomHelper(conn *ws.Conn, username string) {
 	_, _, _ = conn.ReadMessage()
 	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
+		Type: data.Username,
 		Body: make(map[string]string),
 	}
 	joinMessage.Body["username"] = username
@@ -107,7 +111,7 @@ func TestShouldUpgradeWebsocketConnection(t *testing.T) {
 }
 
 // UC5 - account alias
-func TestConnectionRequestsUsername(t *testing.T) {
+func TestConnectionProvidesUserWithDisplayName(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
 
@@ -118,20 +122,11 @@ func TestConnectionRequestsUsername(t *testing.T) {
 	_, res, err := conn.ReadMessage()
 	assert.NoError(t, err)
 
-	fmt.Println(string(res))
-
 	response := data.Message{}
 	err = utils.MapJsonToStruct(res, &response)
 	assert.NoError(t, err)
 
-	expectedJoinMessage := data.Message{
-		Type: data.MessageTypes.UsernamePrompt,
-		Body: make(map[string]string),
-	}
-	expectedJoinMessage.Body["message"] = "Please provide a username"
-	assert.NoError(t, err)
-	assert.Equal(t, expectedJoinMessage.Body["message"], response.Body["message"])
-	assert.Equal(t, expectedJoinMessage.Type, response.Type)
+	assert.Equal(t, data.DisplayName, response.Type)
 }
 
 // UC4 - connected peers
@@ -144,18 +139,8 @@ func TestUserSelectUsername(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 
-	// UsernamePrompt
-	_, _, err = conn.ReadMessage()
-	assert.NoError(t, err)
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = "Johny"
-
-	err = conn.WriteJSON(joinMessage)
-	assert.NoError(t, err)
+	//receive display name
+	_, _, _ = conn.ReadMessage()
 
 	_, peers, err := conn.ReadMessage()
 	response := data.Message{}
@@ -163,121 +148,13 @@ func TestUserSelectUsername(t *testing.T) {
 	assert.NoError(t, err)
 
 	// server sends other users
-	assert.Equal(t, data.MessageTypes.Peers, response.Type)
+	assert.Equal(t, data.Peers, response.Type)
 
 	// server sends message to show others johny has connected
 	_, joinedMessage, err := conn.ReadMessage()
 	responseJoinMessage := data.Message{}
 	err = utils.MapJsonToStruct(joinedMessage, &responseJoinMessage)
-	assert.Equal(t, data.MessageTypes.PeerJoined, responseJoinMessage.Type)
-}
-
-// UC5 - account alias
-func TestUserSelectUsernameInvalidJsonRequest(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-
-	// UsernamePrompt
-	_, _, err = conn.ReadMessage()
-	assert.NoError(t, err)
-
-	joinMessage := "Hi mom!"
-	err = conn.WriteMessage(ws.TextMessage, []byte(joinMessage))
-	assert.NoError(t, err)
-
-	_, invalidRequest, err := conn.ReadMessage()
-	invalidMessage := data.Message{}
-	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
-
-	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
-	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
-}
-
-// UC5 - account alias
-func TestUserSelectUsernameJsonWrongType(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-
-	// UsernamePrompt
-	_, _, err = conn.ReadMessage()
-	assert.NoError(t, err)
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Answer,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = "Johny"
-	err = conn.WriteJSON(joinMessage)
-	assert.NoError(t, err)
-
-	_, invalidRequest, err := conn.ReadMessage()
-	invalidMessage := data.Message{}
-	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
-
-	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
-	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
-}
-
-func TestUserSelectUsernameWrongBody(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-
-	// UsernamePrompt
-	_, _, err = conn.ReadMessage()
-	assert.NoError(t, err)
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
-		Body: make(map[string]string),
-	}
-	err = conn.WriteJSON(joinMessage)
-	assert.NoError(t, err)
-
-	_, invalidRequest, err := conn.ReadMessage()
-	invalidMessage := data.Message{}
-	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
-
-	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
-	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
-}
-
-func TestUserSelectUsernameWrongBodyAndWrongType(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	conn, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-
-	// UsernamePrompt
-	_, _, err = conn.ReadMessage()
-	assert.NoError(t, err)
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.NewIceCandidate,
-		Body: make(map[string]string),
-	}
-	err = conn.WriteJSON(joinMessage)
-	assert.NoError(t, err)
-
-	_, invalidRequest, err := conn.ReadMessage()
-	invalidMessage := data.Message{}
-	err = utils.MapJsonToStruct(invalidRequest, &invalidMessage)
-
-	assert.Equal(t, data.MessageTypes.InvalidMessage, invalidMessage.Type)
-	assert.Equal(t, "invalid request body", invalidMessage.Body["message"])
+	assert.Equal(t, data.PeerJoined, responseJoinMessage.Type)
 }
 
 // UC4 - Peers
@@ -285,36 +162,21 @@ func TestPeersJoinMessageSentOnlyToNewestUser(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
 
-	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	user1, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	// FRED GOES THROUGH THE JOIN PROCESS
-	joinRoomHelper(fred, "Fred")
+	// user1 display name
+	_, _, _ = user1.ReadMessage()
 
-	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	user2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-
-	// username prompt
-	_, _, _ = joe.ReadMessage()
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = "Joe"
-	err = joe.WriteJSON(joinMessage)
-
-	_, peers, err := joe.ReadMessage()
+	// user2 display name
+	_, _, _ = user2.ReadMessage()
+	_, peers, err := user2.ReadMessage()
+	assert.NoError(t, err)
 	peersMessage := data.Message{}
 	err = utils.MapJsonToStruct(peers, &peersMessage)
-	assert.Equal(t, data.MessageTypes.Peers, peersMessage.Type)
-	assert.Equal(t, "Fred", peersMessage.Users[0].Username)
-
-	_, joinJoe, err := fred.ReadMessage()
-	joinJoeMessage := data.Message{}
-	err = utils.MapJsonToStruct(joinJoe, &joinJoeMessage)
-	expectedUser := data.CreateUser("Joe", "")
-	assert.Equal(t, expectedUser, joinJoeMessage.User)
-	assert.Equal(t, data.MessageTypes.PeerJoined, joinJoeMessage.Type)
+	assert.NoError(t, err)
+	assert.Equal(t, data.Peers, peersMessage.Type)
 }
 
 // UC4 - Peers
@@ -322,92 +184,28 @@ func TestPeersLeaveMessageSentAfterConnectionCloses(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
 
-	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	user1, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	// FRED GOES THROUGH THE JOIN PROCESS
-	joinRoomHelper(fred, "Fred")
+	_, _, _ = user1.ReadMessage()
 
-	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
+	user2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(joe, "Joe")
+	_, _, _ = user2.ReadMessage()
 
-	// peer joined message
-	_, _, _ = fred.ReadMessage()
+	_, _, _ = user1.ReadMessage()
+	_, _, _ = user1.ReadMessage()
+	_, _, _ = user1.ReadMessage()
 
-	err = fred.Close()
+	err = user2.Close()
 	assert.NoError(t, err)
 
-	_, leave, err := joe.ReadMessage()
+	_, leave, err := user1.ReadMessage()
 	assert.NoError(t, err)
 	leaveMessage := data.Message{}
 	err = utils.MapJsonToStruct(leave, &leaveMessage)
 	assert.NoError(t, err)
 
-	assert.Equal(t, data.MessageTypes.PeerLeft, leaveMessage.Type)
-	assert.Equal(t, "Fred", leaveMessage.From)
-	assert.Equal(t, "Fred", leaveMessage.User.Username)
-}
-
-// UC5 - Username
-func TestDuplicateUsernameErrorTwoUsersSameName(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	// FRED GOES THROUGH THE JOIN PROCESS
-	joinRoomHelper(fred, "Fred")
-
-	fred2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	_, _, _ = fred2.ReadMessage()
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = "Fred"
-	err = fred2.WriteJSON(joinMessage)
-
-	_, duplicate, err := fred2.ReadMessage()
-	assert.NoError(t, err)
-	duplicateMessage := data.Message{}
-	err = utils.MapJsonToStruct(duplicate, &duplicateMessage)
-	assert.NoError(t, err)
-
-	assert.Equal(t, data.MessageTypes.DuplicateUsername, duplicateMessage.Type)
-	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
-}
-
-// UC5 - Username
-func TestDuplicateUsernameErrorTwoUsersDifferentCapitalization(t *testing.T) {
-	app := setupTestApp()
-	defer app.Shutdown()
-
-	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	// FRED GOES THROUGH THE JOIN PROCESS
-	joinRoomHelper(fred, "Fred")
-
-	fred2, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
-	assert.NoError(t, err)
-	_, _, _ = fred2.ReadMessage()
-
-	joinMessage := data.Message{
-		Type: data.MessageTypes.Username,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = "fred"
-	err = fred2.WriteJSON(joinMessage)
-
-	_, duplicate, err := fred2.ReadMessage()
-	assert.NoError(t, err)
-	duplicateMessage := data.Message{}
-	err = utils.MapJsonToStruct(duplicate, &duplicateMessage)
-	assert.NoError(t, err)
-
-	assert.Equal(t, data.MessageTypes.DuplicateUsername, duplicateMessage.Type)
-	assert.Equal(t, "username not unique", duplicateMessage.Body["message"])
+	assert.Equal(t, data.PeerLeft, leaveMessage.Type)
 }
 
 func TestSelectiveForwardingToUser(t *testing.T) {
@@ -416,26 +214,39 @@ func TestSelectiveForwardingToUser(t *testing.T) {
 
 	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(fred, "Fred")
+	_, fredDisplayMessage, _ := fred.ReadMessage()
+	fredDisplayNameMessage := &data.Message{}
+	utils.MapJsonToStruct(fredDisplayMessage, &fredDisplayNameMessage)
+
+	_, _, _ = fred.ReadMessage()
+	_, _, _ = fred.ReadMessage()
 
 	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(joe, "Joe")
+
+	_, _, _ = joe.ReadMessage()
+	_, _, _ = joe.ReadMessage()
+	_, _, _ = joe.ReadMessage()
 
 	harry, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(harry, "Harry")
+
+	_, harryDisplayName, _ := harry.ReadMessage()
+	harryDisplayNameMessage := &data.Message{}
+	utils.MapJsonToStruct(harryDisplayName, &harryDisplayNameMessage)
+	_, _, _ = harry.ReadMessage()
+	_, _, _ = harry.ReadMessage()
 
 	mockIce := data.Message{
-		Type: data.MessageTypes.NewIceCandidate,
+		Type: data.NewIceCandidate,
 		Candidate: &data.RTCIceCandidate{
 			Candidate:        "SDP PROTOCOL",
 			SdpMid:           "MID",
 			SdpMLineIndex:    0,
 			UsernameFragment: "u89432",
 		},
-		From:   "Fred",
-		Target: "Harry",
+		From:   fredDisplayNameMessage.User.Username,
+		Target: harryDisplayNameMessage.User.Username,
 	}
 	err = fred.WriteJSON(mockIce)
 	assert.NoError(t, err)
@@ -445,7 +256,7 @@ func TestSelectiveForwardingToUser(t *testing.T) {
 	err = utils.MapJsonToStruct(iceOffer, &iceOfferMessage)
 	assert.Equal(t, mockIce, *iceOfferMessage)
 
-	//peer joined
+	//harry joined
 	_, _, _ = joe.ReadMessage()
 
 	msgChannel := make(chan string)
@@ -468,29 +279,47 @@ func TestFakeFromMessage(t *testing.T) {
 
 	fred, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(fred, "Fred")
+	_, fredDisplayName, _ := fred.ReadMessage()
+	fredDisplayNameMessage := &data.Message{}
+	utils.MapJsonToStruct(fredDisplayName, &fredDisplayNameMessage)
+	_, _, _ = fred.ReadMessage()
+	_, _, _ = fred.ReadMessage()
 
 	joe, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(joe, "Joe")
+
+	_, joeDisplayName, _ := joe.ReadMessage()
+	joeDisplayNameMessage := &data.Message{}
+	utils.MapJsonToStruct(joeDisplayName, &joeDisplayNameMessage)
+
+	_, _, _ = joe.ReadMessage()
+	_, _, _ = joe.ReadMessage()
 
 	harry, _, err := ws.DefaultDialer.Dial(TestUrl, nil)
 	assert.NoError(t, err)
-	joinRoomHelper(harry, "Harry")
+
+	_, harryDisplayName, _ := harry.ReadMessage()
+	harryDisplayNameMessage := &data.Message{}
+	utils.MapJsonToStruct(harryDisplayName, &harryDisplayNameMessage)
+	_, _, _ = harry.ReadMessage()
 
 	mockIce := data.Message{
-		Type: data.MessageTypes.NewIceCandidate,
+		Type: data.NewIceCandidate,
 		Candidate: &data.RTCIceCandidate{
 			Candidate:        "SDP PROTOCOL",
 			SdpMid:           "MID",
 			SdpMLineIndex:    0,
 			UsernameFragment: "u89432",
 		},
-		From:   "Fred",
-		Target: "Harry",
+		From:   joeDisplayNameMessage.User.Username,
+		Target: harryDisplayNameMessage.User.Username,
 	}
-	err = joe.WriteJSON(mockIce)
+	err = fred.WriteJSON(mockIce)
 	assert.NoError(t, err)
+
+	// Harry and Joe joined
+	_, _, _ = fred.ReadMessage()
+	_, _, _ = fred.ReadMessage()
 
 	msgChannel := make(chan *data.Message)
 	go func() {
@@ -505,13 +334,12 @@ func TestFakeFromMessage(t *testing.T) {
 		log.Println("DBG -->>", "Harry did not receive spoofed message")
 		break
 	case message := <-msgChannel:
-		if message.Type == data.MessageTypes.NewIceCandidate {
+		if message.Type == data.NewIceCandidate {
 			t.Errorf("Received %v whilst harry shouldn't receive a spoofed message", message)
 		}
 	}
 
-	_, _, _ = joe.ReadMessage()
-	_, message, err := joe.ReadMessage()
+	_, message, err := fred.ReadMessage()
 	if err != nil {
 		log.Println(err)
 		return

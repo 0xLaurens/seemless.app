@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"laurensdrop/internal/core/data"
 	"net"
 	"strings"
@@ -22,7 +21,7 @@ func NewUserRepoInMemory() *UserRepoInMemory {
 func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 	_, exists := s.Users[strings.ToUpper(u.Username)]
 	if exists {
-		return nil, fmt.Errorf(string(data.UserStoreError.DuplicateUsername))
+		return nil, data.UserDuplicateUsername.Error()
 	}
 
 	s.Users[strings.ToUpper(u.Username)] = u
@@ -39,7 +38,7 @@ func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 func (s *UserRepoInMemory) GetUserByName(username string) (*data.User, error) {
 	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
-		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
+		return nil, data.UserNotFound.Error()
 	}
 
 	return user, nil
@@ -48,7 +47,7 @@ func (s *UserRepoInMemory) GetUserByName(username string) (*data.User, error) {
 func (s *UserRepoInMemory) GetUserByAddr(addr data.RemoteAddr) (*data.User, error) {
 	user, exists := s.Conns[addr]
 	if !exists {
-		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
+		return nil, data.UserNotFound.Error()
 	}
 
 	return user, nil
@@ -57,7 +56,7 @@ func (s *UserRepoInMemory) GetUserByAddr(addr data.RemoteAddr) (*data.User, erro
 func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
 	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
-		return nil, fmt.Errorf(string(data.UserStoreError.NotFound))
+		return nil, data.UserNotFound.Error()
 	}
 
 	delete(s.Users, user.Username)
@@ -76,7 +75,7 @@ func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*dat
 func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
 	user, exists := s.Users[strings.ToUpper(username)]
 	if !exists {
-		return nil, fmt.Errorf(data.UserStoreErrMessage(data.UserStoreError.NotFound))
+		return nil, data.UserNotFound.Error()
 	}
 
 	if user.Connection != nil {

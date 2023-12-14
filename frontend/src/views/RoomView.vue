@@ -3,7 +3,7 @@ import {useRoute} from 'vue-router'
 import QrIcon from '@/components/icons/QrIcon.vue'
 import BackIcon from '@/components/icons/BackIcon.vue'
 import {useUserStore} from '@/stores/user'
-import {onMounted, onUnmounted} from 'vue'
+import {onMounted, onUnmounted, type Ref, ref} from 'vue'
 import FileInput from '@/components/FileInput.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import ConfirmDownload from '@/components/ConfirmDownload.vue'
@@ -11,13 +11,19 @@ import {useWebsocketStore} from '@/stores/websocket'
 import WsConnection from '@/components/WsConnection.vue'
 import FileStatusCard from "@/components/FileStatusCard.vue";
 import {useFileStore} from "@/stores/file";
+import type {Message} from "@/models/message";
+import {RequestTypes} from "@/models/request";
+import {useRoomStore} from "@/stores/room";
+import type {RoomCode} from "@/models/room";
 
 const user = useUserStore()
 const ws = useWebsocketStore();
 const file = useFileStore();
+const room = useRoomStore();
 
 const route = useRoute()
 const id = route.params.id
+const code: Ref<RoomCode | undefined> = ref()
 
 onMounted(() => {
   ws.Open()
@@ -26,6 +32,24 @@ onMounted(() => {
 onUnmounted(() => {
   ws.Close()
 })
+// function createPublicRoom() {
+//   const msg: Message = {
+//     type: RequestTypes.PublicRoomCreate
+//   }
+//   ws.SendMessage(msg)
+// }
+//
+// function joinPublicRoom() {
+//   if (!code.value) {
+//     return
+//   }
+//
+//   const msg: Message = {
+//     type: RequestTypes.PublicRoomJoin,
+//     roomCode: code.value
+//   }
+//   ws.SendMessage(msg)
+// }
 </script>
 
 <template>
@@ -48,6 +72,16 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
+
+
+<!--    <button class="btn btn-primary" @click="createPublicRoom">CREATE PUBLIC ROOM</button>-->
+<!--    <span v-if="room.getRoomCode()">connected to {{room.getRoomCode()}}</span>-->
+<!--    <br/>-->
+<!--    <br/>-->
+<!--    <input class="input input-primary" type="text" v-model="code"/>-->
+<!--    <button type="submit" class="btn btn-primary" @click="joinPublicRoom">JOIN PUBLIC ROOM</button>-->
+
+
     <div class="flex flex-1 flex-row w-full px-3 md:pl-10 space-x-3 md:h-[60vh] items-center justify-between">
       <div class="items-center w-full "
            :class="(file.getReceiveOffer()?.value == undefined && file.getSendOffer()?.value  == undefined) ? '' : 'max-w-2xl'">

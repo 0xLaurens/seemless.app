@@ -40,14 +40,14 @@ const router = createRouter({
         }
     ]
 })
-router.beforeEach((to, from, next) => {
-    const store = useUserStore()
-    const emptyUsername = store.getUsername() == ''
-    if ((to.name == 'room' && emptyUsername) || (to.name == 'network' && emptyUsername)) {
-        next({name: 'username'})
-    } else {
-        next()
-    }
-})
+// router.beforeEach((to, from, next) => {
+//     const store = useUserStore()
+//     const emptyUsername = store.getUsername() == ''
+//     if ((to.name == 'room' && emptyUsername) || (to.name == 'network' && emptyUsername)) {
+//         next({name: 'username'})
+//     } else {
+//         next()
+//     }
+// })
 
 export default router
