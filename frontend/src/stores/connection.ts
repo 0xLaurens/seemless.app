@@ -21,7 +21,8 @@ export const useConnStore = defineStore('conn', () => {
     const ws = useWebsocketStore()
     const file = useFileStore()
 
-    const DATACHANNEL_NAME = 'files'
+    const makingOffer = ref(false)
+
     const conn: Ref<Map<string, Connection>> = ref(new Map())
 
     /////////////////////////////
@@ -41,6 +42,22 @@ export const useConnStore = defineStore('conn', () => {
                 type: RequestTypes.NewIceCandidate
             }
             ws.SendMessage(message)
+        }
+        connection.pc.onnegotiationneeded = async () => {
+            try {
+                makingOffer.value = true;
+                const offer = await CreateRtcOffer(connection.username)
+                ws.SendMessage(offer)
+            } catch (err) {
+                console.error(err);
+            } finally {
+                makingOffer.value = false;
+            }
+        };
+        connection.pc.oniceconnectionstatechange = () => {
+            if (connection.pc.iceConnectionState == "failed") {
+                connection.pc.restartIce()
+            }
         }
     }
 
@@ -69,7 +86,7 @@ export const useConnStore = defineStore('conn', () => {
                     break
                 }
                 case FileSetup.DownloadProgress: {
-                    file.setSendOffer(offer);
+                    file.setFileProgress(offer)
                     break;
                 }
                 case FileSetup.Offer: {
@@ -78,6 +95,7 @@ export const useConnStore = defineStore('conn', () => {
                 }
                 case FileSetup.AcceptOffer: {
                     file.setSendOffer(offer)
+                    file.setFileProgress(offer)
                     const files = file.getOfferedFiles(offer.id)
                     if (files == undefined) {
                         console.log("something went wrong!")
@@ -95,11 +113,14 @@ export const useConnStore = defineStore('conn', () => {
             }
         }
         connection.dc.onclose = () => {
-            toast.notify({
-                message: `Connection lost to ${connection.username}`,
-                type: ToastType.Warning
-            })
-            conn.value.delete(connection.username)
+            // toast.notify({
+            //     message: `Connection lost to ${connection.username}`,
+            //     type: ToastType.Warning
+            // })
+            const userToRemove = user.getUserByUsername(connection.username)
+            if (userToRemove) {
+                user.removeUser(userToRemove)
+            }
         }
         connection.dc.onerror = (err) => console.error(err)
     }
@@ -117,6 +138,16 @@ export const useConnStore = defineStore('conn', () => {
         await connection.pc.addIceCandidate(ice)
     }
 
+    function RemoveRtcConn(username: string) {
+        const connection = conn.value.get(username)
+        if (!connection) return
+
+        if (connection.dc) connection.dc.close()
+        connection.pc.close()
+
+        conn.value.delete(username)
+    }
+
     /////////////
     ///  RTC  ///
     /////////////
@@ -129,8 +160,10 @@ export const useConnStore = defineStore('conn', () => {
         conn.value.set(username, connection)
     }
 
+
     async function CreateRtcOffer(username: string): Promise<Message | undefined> {
         if (!conn.value.has(username)) _setupRtcConn(username)
+
         const connection = conn.value.get(username)
         if (connection == undefined) {
             toast.notify({
@@ -140,7 +173,8 @@ export const useConnStore = defineStore('conn', () => {
             return undefined
         }
 
-        connection.dc = connection.pc.createDataChannel(DATACHANNEL_NAME)
+        const target = user.getUserByUsername(username)
+        connection.dc = connection.pc.createDataChannel(target!.id)
         connection.dc.binaryType = "arraybuffer"
         _setupDatachannelEventListeners(connection)
         _setupRtcConnEventListeners(connection)
@@ -183,7 +217,6 @@ export const useConnStore = defineStore('conn', () => {
         const connection = conn.value.get(answer.from)
         answer.type = 'answer'
         await connection?.pc.setRemoteDescription(answer)
-        toast.notify({message: 'Received: Answer!', type: ToastType.Success})
     }
 
     async function HandleIceCandidate(message: Message | undefined) {
@@ -201,6 +234,7 @@ export const useConnStore = defineStore('conn', () => {
     }
 
     return {
+        RemoveRtcConn,
         CreateRtcOffer,
         HandleRtcOffer,
         HandleRtcAnswer,

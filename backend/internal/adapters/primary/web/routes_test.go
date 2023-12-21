@@ -16,7 +16,11 @@ import (
 func setupTestApp() *App {
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	port := WithPort(4543)
 	app := NewApp(wh, port)

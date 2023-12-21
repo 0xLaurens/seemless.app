@@ -2,33 +2,35 @@
 import {ref} from 'vue'
 import type {Ref} from 'vue'
 import {useFileStore} from '@/stores/file'
+import PlaneIcon from "@/components/icons/PlaneIcon.vue";
 
 const fileStore = useFileStore()
-let files: Ref<File[]> = ref([])
+const files: Ref<FileList | undefined> = ref()
 
-function setFiles(event: Event) {
+const props = defineProps<{
+  users: Map<string, boolean>
+}>()
+
+function handleFiles(event: Event) {
   const target = event.target as HTMLInputElement
-  if (!target.files) return
-  files.value = []
-
-  for (const file of target.files) {
-    files.value.push(file)
-  }
-
-  console.log(files.value)
+  if (!target.files) return;
+  files.value = target.files
+  fileStore.sendFilesOffer(files.value, [...props.users.keys()])
 }
+
+
 </script>
 
 <template>
   <div class="flex pb-6">
-    <form @submit.prevent="files.length < 1" @submit="fileStore.sendFilesOffer(files)">
-      <input
-          v-on:change="setFiles"
-          type="file"
-          multiple
-          class="file-input file-input-bordered file-input-accent w-full md:w-auto max-w-md md:mr-10 mb-3 md:mb-0"
-      />
-      <button :disabled="files.length < 1" type="submit" class="btn w-full md:btn-wide btn-primary">Send</button>
-    </form>
+    <button :disabled="users.size < 1" class="btn btn-primary w-full">
+      <label for="fileInput"
+             class="btn btn-ghost w-full">
+        Transfer
+        <plane-icon/>
+        <input id="fileInput" type="file" class="hidden"
+               @change="handleFiles($event)"/>
+      </label>
+    </button>
   </div>
 </template>

@@ -1,51 +1,65 @@
 package data
 
-// UserStoreErr is a wrapper type related to user storage errors
-type UserStoreErr string
+import "errors"
 
-var UserStoreError = struct {
-	DuplicateUsername UserStoreErr
-	NotFound          UserStoreErr
-}{
-	DuplicateUsername: "DuplicateUsername",
-	NotFound:          "NotFound",
-}
+type UserError string
 
-func UserStoreErrMessage(error UserStoreErr) string {
-	switch error {
-	case UserStoreError.NotFound:
-		return "user not found"
-	case UserStoreError.DuplicateUsername:
-		return "username not unique"
-	default:
-		return "internal error"
+const (
+	UserDuplicateUsername UserError = "UserDuplicateUsername"
+	UserNotFound          UserError = "UserNotFound"
+)
+
+func (ue UserError) Error() error {
+	switch ue {
+	case UserDuplicateUsername:
+		return errors.New("username is not unique")
+	case UserNotFound:
+		return errors.New("user not found")
 	}
+
+	return nil
 }
 
-// WsErr is a wrapper type for WS related errors
-type WsErr int
+type WebsocketError string
 
-// WsError NOTE: should be up-to-date with http status codes
-var WsError = struct {
-	InvalidRequestBody WsErr
-}{
-	InvalidRequestBody: 400,
-}
+const (
+	InvalidRequestBody WebsocketError = "InvalidRequestBody"
+)
 
-func WsErrorType(error WsErr) string {
-	switch error {
-	case WsError.InvalidRequestBody:
-		return "InvalidRequest"
-	default:
-		return "WsError"
+func (we WebsocketError) Error() error {
+	switch we {
+	case InvalidRequestBody:
+		return errors.New("the message has a invalid request body")
 	}
+
+	return nil
 }
 
-func WsErrorMessage(error WsErr) string {
-	switch error {
-	case WsError.InvalidRequestBody:
-		return "invalid request body"
-	default:
-		return "internal error"
+type RoomError int
+
+const (
+	DuplicateRoomCode RoomError = iota
+	InvalidRoomCode
+	RoomNotEmpty
+	RoomNotFound
+	DuplicateRoom
+	InvalidRoomUpdate
+)
+
+func (re RoomError) Error() error {
+	switch re {
+	case DuplicateRoomCode:
+		return errors.New("duplicate room code")
+	case InvalidRoomCode:
+		return errors.New("invalid room code")
+	case RoomNotEmpty:
+		return errors.New("room is not empty cannot delete")
+	case RoomNotFound:
+		return errors.New("room does not exist")
+	case DuplicateRoom:
+		return errors.New("room already exists")
+	case InvalidRoomUpdate:
+		return errors.New("you are not allowed to edit this property")
 	}
+	return nil
 }

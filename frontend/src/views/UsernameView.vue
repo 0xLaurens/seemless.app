@@ -3,12 +3,9 @@ import {useUserStore} from '@/stores/user'
 import {ref} from 'vue'
 import router from '@/router'
 import BackIcon from "@/components/icons/BackIcon.vue";
-import {useToastStore} from "@/stores/toast";
-import {ToastType} from "@/models/toast";
 
 const user = useUserStore()
 const username = ref(user.getUsername())
-const toast = useToastStore()
 
 function cleanNickname(name: string) {
   name = name.trimStart()
@@ -18,11 +15,6 @@ function cleanNickname(name: string) {
 
 function selectNickname() {
   if (!username.value) {
-    return
-  }
-
-  if (username.value.length > 16) {
-    toast.notify({message: "Max length of username exceeded", type: ToastType.Warning})
     return
   }
 

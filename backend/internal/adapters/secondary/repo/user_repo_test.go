@@ -14,10 +14,10 @@ func SetupUserStore() ports.UserRepo {
 
 func SeedData(s ports.UserRepo) (int, error) {
 	users := []*data.User{
-		data.CreateUser("Jane", "Android"),
-		data.CreateUser("John", "Iphone"),
-		data.CreateUser("Harry", "Iphone"),
-		data.CreateUser("Laurens", "Linux"),
+		data.CreateUser("Android", data.WithUsername("Harry")),
+		data.CreateUser("Iphone", data.WithUsername("John")),
+		data.CreateUser("Iphone", data.WithUsername("Ingrid")),
+		data.CreateUser("Linux", data.WithUsername("Suzi")),
 	}
 
 	for i := range users {
@@ -64,7 +64,7 @@ func TestGetAllUsersUsersFound(t *testing.T) {
 // add user
 func TestAddUserShouldAddUserToStore(t *testing.T) {
 	s := SetupUserStore()
-	user := data.CreateUser("Fritz", "Iphone")
+	user := data.CreateUser("Iphone")
 	_, err := s.AddUser(user)
 	if err != nil {
 		return
@@ -87,7 +87,7 @@ func TestAddUserShouldNotAddDuplicateUsername(t *testing.T) {
 		return
 	}
 
-	_, err = s.AddUser(data.CreateUser("Jane", "Windows"))
+	_, err = s.AddUser(data.CreateUser("Windows", data.WithUsername("Harry")))
 	if err != nil {
 		return
 	}
@@ -109,20 +109,15 @@ func TestAddUserShouldThrowDuplicateUsernameError(t *testing.T) {
 	if err != nil {
 		return
 	}
-	_, err = s.AddUser(data.CreateUser("Laurens", "Linux"))
-	if err.Error() != string(data.UserStoreError.DuplicateUsername) {
-		t.Errorf("got %v expected %v", err.Error(), data.UserStoreError.DuplicateUsername)
-	}
+	_, err = s.AddUser(data.CreateUser("Linux", data.WithUsername("Harry")))
+	assert.Equal(t, data.UserDuplicateUsername.Error().Error(), err.Error())
 }
 
 // update user
 func TestUpdateUserShouldThrowNotFoundError(t *testing.T) {
 	s := SetupUserStore()
 	_, err := s.GetUserByName("1234")
-
-	if err.Error() != string(data.UserStoreError.NotFound) {
-		t.Errorf("got %v expected %v", err.Error(), data.UserStoreError.NotFound)
-	}
+	assert.Equal(t, data.UserNotFound.Error().Error(), err.Error())
 }
 
 func TestUpdateUserShouldUpdateUser(t *testing.T) {
@@ -137,7 +132,7 @@ func TestUpdateUserShouldUpdateUser(t *testing.T) {
 		return
 	}
 
-	userDTO := data.CreateUser("Jane", "Android")
+	userDTO := data.CreateUser("Android")
 	_, err = s.UpdateUser(users[0].Username, userDTO)
 	if err != nil {
 		return
@@ -166,7 +161,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 		return
 	}
 
-	userDTO := data.CreateUser("Jane", "Android")
+	userDTO := data.CreateUser("Android", data.WithUsername("Harry"))
 	_, err = s.UpdateUser(preUpdate[0].Username, userDTO)
 	if err != nil {
 		return
@@ -239,5 +234,5 @@ func TestGetUserShouldReturnErrorWhenUserNotFound(t *testing.T) {
 	}
 
 	_, err = s.RemoveUser("bsUsername")
-	assert.Equal(t, data.UserStoreErrMessage(data.UserStoreError.NotFound), err.Error())
+	assert.Equal(t, data.UserNotFound.Error().Error(), err.Error())
 }
