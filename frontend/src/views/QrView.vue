@@ -24,9 +24,10 @@ onMounted(() => {
       title: "seemless.app",
       text: "hello",
     })
-  } catch (e) {
+  } catch (error: any) {
+    console.log(typeof error)
     // only available on https error can be ignored in development
-    console.warn(e.message) // navigator.canShare is not a function
+    console.warn(error.message) // navigator.canShare is not a function
   }
 
   if (room.getRoomCode() == undefined) {

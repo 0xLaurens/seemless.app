@@ -2,17 +2,21 @@
 import {type User, UserTransfer} from "@/models/user";
 import DeviceIcon from "@/components/icons/devices/DeviceIcon.vue";
 import {useDownloadStore} from "@/stores/download";
-import {ref} from "vue";
+import {onUnmounted, ref} from "vue";
 
-defineProps<{
+const props = defineProps<{
   user: User
 }>()
 
 const selected = ref(false)
 
-defineEmits(['selected'])
+const emit = defineEmits(['selected', 'removeUser'])
 
 const download = useDownloadStore()
+
+onUnmounted(() => {
+  emit("removeUser", props.user.username)
+})
 </script>
 
 <template>
