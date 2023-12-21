@@ -14,7 +14,11 @@ func TestWithPortToEqual3333(t *testing.T) {
 	withPort := WithPort(port)
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	app := NewApp(wh, withPort)
 	assert.Equal(t, port, app.port)
@@ -25,7 +29,11 @@ func TestWithPortToEqual4343(t *testing.T) {
 	withPort := WithPort(port)
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	app := NewApp(wh, withPort)
 	assert.Equal(t, port, app.port)
@@ -35,7 +43,11 @@ func TestWithPortDefaultPort3000(t *testing.T) {
 	port := 3000
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	app := NewApp(wh)
 	assert.Equal(t, port, app.port)
@@ -44,7 +56,11 @@ func TestWithPortDefaultPort3000(t *testing.T) {
 func TestWithFiberConfBodyLimit(t *testing.T) {
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	conf := fiber.Config{BodyLimit: 3999}
 	withFiberConf := WithFiberConf(conf)
@@ -56,7 +72,11 @@ func TestWithFiberConfBodyLimit(t *testing.T) {
 func TestWithFiberConfETag(t *testing.T) {
 	ur := repo.NewUserRepoInMemory()
 	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	rr := repo.NewRoomRepoInMemory()
+	cr := repo.NewCodeRepoInMemory()
+	cs := services.NewCodeService(cr)
+	rs := services.NewRoomService(rr, cs)
+	wh := handlers.NewWebsocketHandler(us, rs)
 
 	conf := fiber.Config{ETag: false}
 	withFiberConf := WithFiberConf(conf)

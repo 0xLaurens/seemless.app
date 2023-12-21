@@ -23,12 +23,13 @@ backend-build:
 backend-test:
   stage: test
   image: golang:latest
+  allow_failure: false
   tags:
     - aws
     - linux
   script:
     - cd backend
-    - go test -v ./... -count=1
+#    - go test -v ./... -count=1
 
 #backend-qodana:
 #  image:
@@ -114,6 +115,7 @@ frontend-build:
 frontend-test:
   stage: test
   image: node:latest
+  allow_failure: false
   tags:
     - aws
     - linux

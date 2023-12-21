@@ -11,33 +11,34 @@ type Message struct {
 	SDP       string            `json:"sdp,omitempty"`
 	Candidate *RTCIceCandidate  `json:"candidate,omitempty"`
 	Body      map[string]string `json:"body,omitempty"`
+	RoomCode  RoomCode          `json:"roomCode,omitempty"`
 	Conn      *websocket.Conn   `json:"-"`
 }
 
 type MessageType string
 
-var MessageTypes = struct {
-	Offer             MessageType
-	Answer            MessageType
-	NewIceCandidate   MessageType
-	PeerJoined        MessageType
-	PeerLeft          MessageType
-	PeerUpdated       MessageType
-	Peers             MessageType
-	Username          MessageType
-	UsernamePrompt    MessageType
-	InvalidMessage    MessageType
-	DuplicateUsername MessageType
-}{
-	Offer:             "Offer",
-	Answer:            "Answer",
-	NewIceCandidate:   "NewIceCandidate",
-	PeerJoined:        "PeerJoined",
-	PeerLeft:          "PeerLeft",
-	PeerUpdated:       "PeerUpdated",
-	Peers:             "Peers",
-	Username:          "Username",
-	UsernamePrompt:    "UsernamePrompt",
-	InvalidMessage:    "InvalidMessage",
-	DuplicateUsername: "DuplicateUsername",
-}
+const (
+	Offer             MessageType = "Offer"
+	Answer            MessageType = "Answer"
+	NewIceCandidate   MessageType = "NewIceCandidate"
+	PeerJoined        MessageType = "PeerJoined"
+	PeerLeft          MessageType = "PeerLeft"
+	PeerUpdated       MessageType = "PeerUpdated"
+	Peers             MessageType = "Peers"
+	Username          MessageType = "Username"
+	UsernamePrompt    MessageType = "UsernamePrompt"
+	InvalidMessage    MessageType = "InvalidMessage"
+	DuplicateUsername MessageType = "DuplicateUsername"
+
+	PublicRoomJoin      MessageType = "PublicRoomJoin"
+	PublicRoomLeft      MessageType = "PublicRoomLeft"
+	PublicRoomPeers     MessageType = "PublicRoomPeers"
+	PublicRoomCreated   MessageType = "PublicRoomCreated"
+	PublicRoomCreate    MessageType = "PublicRoomCreate"
+	PublicRoomIdInvalid MessageType = "PublicRoomIdInvalid"
+
+	LocalRoomJoin  MessageType = "LocalRoomJoin"
+	LocalRoomLeave MessageType = "LocalRoomLeave"
+
+	DisplayName MessageType = "DisplayName"
+)

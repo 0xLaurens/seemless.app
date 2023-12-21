@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/mssola/user_agent"
 	"laurensdrop/internal/adapters/secondary"
 	"laurensdrop/internal/core/data"
@@ -10,20 +12,24 @@ import (
 	"laurensdrop/internal/core/utils"
 	"laurensdrop/internal/ports"
 	"log"
+	"strings"
 )
 
 type WebsocketHandler struct {
-	us  ports.UserService
-	msg ports.MessageService
+	us   ports.UserService
+	room ports.RoomService
+	msg  ports.MessageService
 }
 
-func NewWebsocketHandler(us ports.UserRepo) *WebsocketHandler {
+func NewWebsocketHandler(us ports.UserRepo, room ports.RoomService) *WebsocketHandler {
 	return &WebsocketHandler{
 		us: services.NewUserService(us),
 		msg: services.NewMessageService(us,
+			room,
 			secondary.NewWebsocketMsgNotifier(),
 			secondary.NewWebsocketMessageValidator(us),
 		),
+		room: room,
 	}
 }
 
@@ -38,72 +44,35 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 	ua := user_agent.New(c.Headers("User-Agent"))
 	os := ua.OSInfo().Name
 	wh.msg.SetWebsocketMsgNotifierConn(c)
-	username := ""
-	usernamePrompt := data.Message{
-		Type: data.MessageTypes.UsernamePrompt,
-		Body: make(map[string]string),
-	}
-	usernamePrompt.Body["message"] = "Please provide a username"
 
-	err := wh.msg.SendJSON(usernamePrompt)
-	if err != nil {
-		log.Println("ERR -->> write JSON error")
-		return err
-	}
-
-	for username == "" {
-		msg, err := ReadMessage(c)
-		if err != nil {
-			log.Println("ERR -->> read message", err)
-			_ = wh.msg.InvalidMessage(nil)
-			return err
-		}
-
-		username = msg.Body["username"]
-		if username == "" || msg.Type != data.MessageTypes.Username {
-			_ = wh.msg.InvalidMessage(nil)
-			username = ""
-		}
-
-		if u, _ := wh.us.GetUserByName(username); u != nil || msg.Type != data.MessageTypes.Username {
-			err := data.UserStoreError.DuplicateUsername
-			msg := &data.Message{
-				Type: data.MessageTypes.DuplicateUsername,
-				Body: make(map[string]string),
-			}
-			msg.Body["message"] = data.UserStoreErrMessage(err)
-
-			_ = wh.msg.InvalidMessage(msg)
-			username = ""
-		}
-	}
-
-	users, err := wh.us.GetAllUsers()
-	if err != nil {
-		return err
-	}
-	log.Printf("DBG -->> users: %v\n", users)
-
-	peers := &data.Message{Type: data.MessageTypes.Peers, Users: users}
-	err = wh.msg.Send(peers)
+	user := data.CreateUser(os, data.WithConnection(c))
+	_, err := wh.us.AddUser(user)
 	if err != nil {
 		return err
 	}
 
-	user := data.CreateUser(username, os, data.WithConnection(c))
-	_, err = wh.us.AddUser(user)
+	room, err := wh.room.JoinLocalRoom(user)
 	if err != nil {
 		return err
 	}
-
 	defer wh.wsDefer(user, c)
 
-	err = wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerJoined, User: user, From: username})
+	displayName := &data.Message{Type: data.DisplayName, User: user}
+	err = wh.msg.Send(displayName)
 	if err != nil {
+		log.Println("ERR -->> display name", err)
 		return err
 	}
 
+	err = wh.msg.SendTargeted(&data.Message{Type: data.Peers, Users: room.GetClients()}, user)
 	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	err = wh.msg.Broadcast(&data.Message{Type: data.PeerJoined, User: user, From: user.Username}, room.GetId())
+	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
@@ -112,13 +81,10 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		msg, err := ReadMessage(c)
 		if err != nil {
 			log.Println("ERR -->> read message", err)
-			return err
 		}
-		log.Println("DBG -->>", msg.Type, msg.SDP)
-		err = wh.WsRequestHandler(msg, c)
+		err = wh.WsRequestHandler(msg, user)
 		if err != nil {
-			log.Println("ERR -->> readloop", err)
-			return err
+			log.Println("ERR -->> read loop", err)
 		}
 	}
 }
@@ -139,44 +105,126 @@ func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
 }
 
 func (wh *WebsocketHandler) wsDefer(user *data.User, conn *websocket.Conn) {
-	log.Println("DBG", "defer")
+	log.Println("DBG", "defer", user.Username)
 	_, err := wh.us.RemoveUser(user.Username)
 	if err != nil {
 		return
 	}
-	err = conn.Close()
-	if err != nil {
-		return
+	_ = conn.Close() // attempt to close ignore if it's not successful
+
+	if user.LocalRoom != uuid.Nil {
+		localRoom, err := wh.room.GetRoomById(user.LocalRoom)
+		if err != nil {
+			log.Println("err ->> local room get by id", err)
+			return
+		}
+
+		localRoom.RemoveClient(user)
+		err = wh.msg.Broadcast(&data.Message{Type: data.PeerLeft, User: user, From: user.Username}, user.LocalRoom)
+		if err != nil {
+			log.Println("ERR -->> local room", err)
+			return
+		}
 	}
 
-	err = wh.msg.Broadcast(&data.Message{Type: data.MessageTypes.PeerLeft, User: user, From: user.Username})
-	if err != nil {
-		log.Println("ERR", err)
-		return
+	if user.PublicRoom != uuid.Nil {
+		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomLeft, User: user, From: user.Username}, user.PublicRoom)
+		if err != nil {
+			log.Println("ERR -->> public room", err)
+			return
+		}
 	}
 }
 
-func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, conn *websocket.Conn) error {
+func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, user *data.User) error {
+	log.Println("WsRequestHandler", msg, user.LocalRoom, user.PublicRoom)
 	switch msg.Type {
-	case data.MessageTypes.Offer,
-		data.MessageTypes.Answer,
-		data.MessageTypes.PeerLeft,
-		data.MessageTypes.PeerUpdated,
-		data.MessageTypes.PeerJoined,
-		data.MessageTypes.NewIceCandidate:
-		msg.Conn = conn
-		err := wh.msg.Broadcast(msg)
+	case data.Offer,
+		data.Answer,
+		data.PeerLeft,
+		data.PeerUpdated,
+		data.PeerJoined,
+		data.NewIceCandidate:
+		msg.Conn = user.Connection
+		if user.LocalRoom != uuid.Nil {
+			err := wh.msg.Broadcast(msg, user.LocalRoom)
+			if err != nil {
+				log.Println("ERR -->> local room broadcast", err)
+				return err
+			}
+		}
+		if user.PublicRoom != uuid.Nil {
+			err := wh.msg.Broadcast(msg, user.PublicRoom)
+			if err != nil {
+				log.Println("ERR -->> public room broadcast", err)
+				return err
+			}
+		}
+	case data.PublicRoomCreate:
+		if user.PublicRoom != uuid.Nil {
+			log.Println("You already made a room")
+			break
+		}
+
+		room, err := wh.room.CreatePublicRoom()
 		if err != nil {
-			log.Println("ERR -->> ws handler", err)
+			fmt.Println("Failed to create room")
 			return err
 		}
-		return nil
+
+		err = wh.room.JoinPublicRoom(room.GetCode(), user)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		room, err = wh.room.GetRoomByCode(room.GetCode())
+		if err != nil {
+			return err
+		}
+
+		err = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomCreated, RoomCode: room.GetCode()}, user)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomJoin, User: user}, user.PublicRoom)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+	case data.PublicRoomJoin:
+		log.Printf("PUBLIC ROOM %s JOIN REQUEST %s\n", msg.RoomCode, user.Username)
+		room, err := wh.room.GetRoomByCode(data.RoomCode(strings.ToUpper(string(msg.RoomCode))))
+		if err != nil {
+			log.Println(err)
+			_ = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomIdInvalid}, user)
+		}
+
+		err = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomPeers, Users: room.GetClients(), RoomCode: room.GetCode()}, user)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		err = wh.room.JoinPublicRoom(room.GetCode(), user)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomJoin, User: user}, room.GetId())
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 	default:
 		log.Println("ERR -->> invalid request")
 		err := wh.msg.InvalidMessage(nil)
 		if err != nil {
 			return err
 		}
-		return nil
 	}
+	return nil
 }

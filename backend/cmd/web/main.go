@@ -9,9 +9,16 @@ import (
 )
 
 func main() {
-	ur := repo.NewUserRepoInMemory()
-	us := services.NewUserService(ur)
-	wh := handlers.NewWebsocketHandler(us)
+	userRepo := repo.NewUserRepoInMemory()
+	userService := services.NewUserService(userRepo)
+
+	codeRepo := repo.NewCodeRepoInMemory()
+	codeService := services.NewCodeService(codeRepo)
+
+	roomRepo := repo.NewRoomRepoInMemory()
+	roomService := services.NewRoomService(roomRepo, codeService)
+
+	wh := handlers.NewWebsocketHandler(userService, roomService)
 
 	app := web.NewApp(wh)
 
