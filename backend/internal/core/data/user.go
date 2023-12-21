@@ -11,6 +11,7 @@ type RemoteAddr *net.TCPAddr
 type UserOption func(*User)
 
 type User struct {
+	Id         uuid.UUID       `json:"id"`
 	Username   string          `json:"username"`
 	Device     string          `json:"device"`
 	Connection *websocket.Conn `json:"-"`
@@ -35,6 +36,7 @@ func WithUsername(username string) UserOption {
 
 func CreateUser(device string, options ...UserOption) *User {
 	user := &User{
+		Id:         uuid.New(),
 		Username:   utils.GenerateRandomDisplayName(),
 		Device:     device,
 		PublicRoom: uuid.Nil,

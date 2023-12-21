@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DocumentIcon from "@/components/icons/DocumentIcon.vue";
+import DocumentIcon from "@/components/icons/files/DocumentIcon.vue";
 import type {FileMessage} from "@/models/file";
 import {formatFileSize} from "@/utils/filesize";
 

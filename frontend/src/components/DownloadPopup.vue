@@ -1,11 +1,11 @@
 <template>
   <div
-@click="download.close()"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-gray-400/25 backdrop-filter backdrop-blur"
+      @click="download.close()"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-filter backdrop-blur"
       v-if="download.popup"
       :aria-hidden="download.popup"
   >
-    <div @click.stop class="card w-96 bg-neutral text-neutral-content">
+    <div @click.stop class="card w-96 bg-base-100 dark:bg-neutral text-neutral-content">
       <div class="card-body items-center text-center">
         <h2 class="card-title text-black text-left dark:text-white font-bold text-2xl">
           {{ download.activeOffer?.from || 'Username' }}
@@ -15,7 +15,8 @@
           file(s)
         </h2>
         <div class="w-full space-y-1 max-h-60 overflow-y-scroll my-3">
-          <file-preview :file="file" :key="file.name" v-for="file in download.activeOffer?.files"/>
+          <file-card :file="file" :progress="false" :key="file.name" v-for="file in download.activeOffer?.files"
+                     incoming/>
         </div>
         <img
             class="pb-6 h-32 w-auto"
@@ -28,7 +29,7 @@
             Deny
           </button>
           <a
-              class="btn btn-accent"
+              class="btn btn-primary"
               @click="download.acceptOffer(download.activeOffer)"
               :href="download.url"
               download
@@ -43,7 +44,7 @@
 
 <script setup lang="ts">
 import {useDownloadStore} from '@/stores/download'
-import FilePreview from "@/components/FilePreview.vue";
+import FileCard from "@/components/FileCard.vue";
 
 const download = useDownloadStore()
 </script>

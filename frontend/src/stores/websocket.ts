@@ -78,6 +78,7 @@ export const useWebsocketStore = defineStore('ws', () => {
                 await router.push({path: '/nick'})
                 break
             case RequestTypes.DisplayName:
+                user.setCurrentUser(data.user)
                 user.setUsername(data.user.username)
                 break
             case RequestTypes.PublicRoomCreated:
@@ -86,7 +87,7 @@ export const useWebsocketStore = defineStore('ws', () => {
             case RequestTypes.PublicRoomIdInvalid:
                 // TODO: implement not room not found
                 break
-            case RequestTypes.PublicRoomJoin:
+            case RequestTypes.PublicRoomJoin: {
                 if (data.user.username === user.getUsername()) return
                 user.addUser(data.user)
                 const offer = await conn.CreateRtcOffer(data.user.username)
@@ -94,6 +95,7 @@ export const useWebsocketStore = defineStore('ws', () => {
                     SendMessage(offer)
                 }
                 break
+            }
             case RequestTypes.PublicRoomPeers:
                 if (!data.users) return
                 for (const newUser of data.users) {
@@ -160,6 +162,14 @@ export const useWebsocketStore = defineStore('ws', () => {
         ws.value?.send(JSON.stringify(msg))
     }
 
+    function isOpen(): boolean {
+        return ws.value?.readyState === ws.value?.OPEN
+    }
+
+    function isClosed(): boolean {
+        return ws.value?.readyState === ws.value?.CLOSED
+    }
+
     function Open() {
         intended_close.value = false
         if (ws.value !== undefined && ws.value?.readyState == ws.value?.OPEN) return
@@ -179,6 +189,8 @@ export const useWebsocketStore = defineStore('ws', () => {
     return {
         Open,
         Close,
+        isOpen,
+        isClosed,
         GetConnection,
         SendMessage
     }
