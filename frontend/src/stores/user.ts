@@ -9,6 +9,8 @@ export const useUserStore = defineStore('user', () => {
     const username = ref("")
     const users: Ref<User[]> = ref([])
     const usersMap: Ref<Map<string, boolean>> = ref(new Map())
+    const currentUser: Ref<User | undefined> = ref(undefined)
+
     const conn = useConnStore()
     const download = useDownloadStore()
 
@@ -18,6 +20,14 @@ export const useUserStore = defineStore('user', () => {
 
     function setUsername(name: string) {
         username.value = name
+    }
+
+    function getCurrentUser(): User | undefined {
+        return currentUser.value
+    }
+
+    function setCurrentUser(user: User) {
+        currentUser.value = user
     }
 
     function getUserByUsername(username: string) {
@@ -51,6 +61,8 @@ export const useUserStore = defineStore('user', () => {
         addUser,
         removeUser,
         clearUsers,
+        getCurrentUser,
+        setCurrentUser,
         users
     }
 })

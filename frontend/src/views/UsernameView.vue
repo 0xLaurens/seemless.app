@@ -3,12 +3,9 @@ import {useUserStore} from '@/stores/user'
 import {ref} from 'vue'
 import router from '@/router'
 import BackIcon from "@/components/icons/BackIcon.vue";
-import {useToastStore} from "@/stores/toast";
-import {ToastType} from "@/models/toast";
 
 const user = useUserStore()
 const username = ref(user.getUsername())
-const toast = useToastStore()
 
 function cleanNickname(name: string) {
   name = name.trimStart()

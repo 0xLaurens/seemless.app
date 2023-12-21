@@ -6,14 +6,11 @@ import {ref} from 'vue'
 import {defineStore} from 'pinia'
 import {useConnStore} from '@/stores/connection'
 import {useUserStore} from '@/stores/user'
-import {useToastStore} from '@/stores/toast'
-import {ToastType} from '@/models/toast'
 import StreamSaver from "streamsaver";
 
 export const useFileStore = defineStore('file', () => {
     const conn = useConnStore()
     const user = useUserStore()
-    const toast = useToastStore()
     const offeredFiles: Ref<Map<string, FileList>> = ref(new Map())
     const stream: Ref<WritableStream<Uint8Array> | undefined> = ref(undefined)
     const writer: Ref<WritableStreamDefaultWriter<Uint8Array> | undefined> = ref(undefined)
@@ -23,6 +20,8 @@ export const useFileStore = defineStore('file', () => {
     StreamSaver.mitm = import.meta.env.VITE_MITM_URL ? `${import.meta.env.VITE_MITM_URL}/mitm.html` : `/StreamSaver/mitm.html?version=2.0.0`
     console.log(StreamSaver.mitm)
 
+    const fileProgress: Ref<Map<string, FileOffer>> = ref(new Map())
+
 
     function setSendOffer(offer: FileOffer) {
         sendOffer.value = offer;
@@ -30,6 +29,14 @@ export const useFileStore = defineStore('file', () => {
 
     function getSendOffer() {
         return sendOffer
+    }
+
+    function setFileProgress(offer: FileOffer) {
+        fileProgress.value.set(offer.target, offer)
+    }
+
+    function getFileProgress(): Ref<Map<string, FileOffer>> {
+        return fileProgress
     }
 
     function setReceiveOffer(offer: FileOffer) {
@@ -126,13 +133,7 @@ export const useFileStore = defineStore('file', () => {
         return messages
     }
 
-    async function sendFilesOffer(files: FileList | undefined) {
-        const connections = conn.GetConnections()
-        if (connections === undefined) return
-        if (connections.length < 1) {
-            toast.notify({message: 'Something went wrong', type: ToastType.Warning})
-            return
-        }
+    async function sendFilesOffer(files: FileList | undefined, targets: string[]) {
         if (!files) return
 
         const fileMessages = filesToFileMessage(files);
@@ -148,7 +149,9 @@ export const useFileStore = defineStore('file', () => {
 
         addOfferedFiles(offer.id, files)
 
-        for (const connection of connections) {
+        for (const target of targets) {
+            const connection = conn.GetUserConnection(target)
+            if (!connection) continue
             offer.target = connection.username
             connection.dc?.send(JSON.stringify(offer))
         }
@@ -180,7 +183,6 @@ export const useFileStore = defineStore('file', () => {
         }
 
         const CHUNK_SIZE = 16384 //16 KiB chrome being chrome
-        let offset = 0
 
         connection.dc.bufferedAmountLowThreshold = 1048576 // 1mb
 
@@ -206,6 +208,9 @@ export const useFileStore = defineStore('file', () => {
     }
 
     return {
+        setFileProgress,
+        getFileProgress,
+
         setSendOffer,
         getSendOffer,
         setReceiveOffer,

@@ -6,9 +6,11 @@ import (
 	"laurensdrop/internal/ports"
 	"log"
 	"net"
+	"sync"
 )
 
 type RoomRepoInMemory struct {
+	mu          sync.Mutex
 	rooms       map[uuid.UUID]*data.Room
 	localRooms  map[string]*data.Room //ip
 	publicRooms map[data.RoomCode]*data.Room
@@ -25,11 +27,15 @@ func NewRoomRepoInMemory() *RoomRepoInMemory {
 }
 
 func (r *RoomRepoInMemory) roomExistById(id uuid.UUID) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	room := r.rooms[id]
 	return room != nil
 }
 
 func (r *RoomRepoInMemory) roomExistByIp(ip *net.IP) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if ip == nil {
 		return false
 	}
@@ -38,6 +44,8 @@ func (r *RoomRepoInMemory) roomExistByIp(ip *net.IP) bool {
 }
 
 func (r *RoomRepoInMemory) roomExistByCode(code data.RoomCode) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	room := r.publicRooms[code]
 	return room != nil
 }
@@ -53,6 +61,7 @@ func (r *RoomRepoInMemory) AddRoom(room *data.Room) (*data.Room, error) {
 		return nil, data.DuplicateRoom.Error()
 	}
 
+	r.mu.Lock()
 	r.rooms[room.GetId()] = room
 
 	switch room.GetType() {
@@ -64,10 +73,15 @@ func (r *RoomRepoInMemory) AddRoom(room *data.Room) (*data.Room, error) {
 		log.Println("Add local room", r.localRooms[room.GetIP().String()])
 	}
 
+	r.mu.Unlock()
+
 	return room, nil
 }
 
 func (r *RoomRepoInMemory) GetRoomById(id uuid.UUID) (*data.Room, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	room := r.rooms[id]
 	if room == nil {
 		return nil, data.RoomNotFound.Error()
@@ -77,6 +91,9 @@ func (r *RoomRepoInMemory) GetRoomById(id uuid.UUID) (*data.Room, error) {
 }
 
 func (r *RoomRepoInMemory) GetRoomByCode(code data.RoomCode) (*data.Room, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	room := r.publicRooms[code]
 	if room == nil {
 		return nil, data.RoomNotFound.Error()
@@ -86,6 +103,9 @@ func (r *RoomRepoInMemory) GetRoomByCode(code data.RoomCode) (*data.Room, error)
 }
 
 func (r *RoomRepoInMemory) GetRoomByIp(ip *net.IP) (*data.Room, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if ip == nil {
 		return nil, data.RoomNotFound.Error()
 	}
@@ -122,6 +142,8 @@ func (r *RoomRepoInMemory) UpdateRoom(room *data.Room) (*data.Room, error) {
 			r.localRooms[room.GetIP().String()] = room
 		}
 	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	r.rooms[room.GetId()] = room
 
@@ -129,14 +151,18 @@ func (r *RoomRepoInMemory) UpdateRoom(room *data.Room) (*data.Room, error) {
 }
 
 func (r *RoomRepoInMemory) DeleteRoom(id uuid.UUID) error {
+
 	room, err := r.GetRoomById(id)
 	if err != nil {
 		return err
 	}
 
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if clients := room.GetClients(); len(clients) > 0 {
 		return data.RoomNotEmpty.Error()
 	}
+
 	delete(r.rooms, room.GetId())
 	if room.GetIP() != nil {
 		delete(r.localRooms, room.GetIP().String())

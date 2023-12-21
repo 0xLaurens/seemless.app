@@ -23,7 +23,6 @@ export const useConnStore = defineStore('conn', () => {
 
     const makingOffer = ref(false)
 
-    const DATACHANNEL_NAME = 'files'
     const conn: Ref<Map<string, Connection>> = ref(new Map())
 
     /////////////////////////////
@@ -87,7 +86,7 @@ export const useConnStore = defineStore('conn', () => {
                     break
                 }
                 case FileSetup.DownloadProgress: {
-                    file.setSendOffer(offer);
+                    file.setFileProgress(offer)
                     break;
                 }
                 case FileSetup.Offer: {
@@ -96,6 +95,7 @@ export const useConnStore = defineStore('conn', () => {
                 }
                 case FileSetup.AcceptOffer: {
                     file.setSendOffer(offer)
+                    file.setFileProgress(offer)
                     const files = file.getOfferedFiles(offer.id)
                     if (files == undefined) {
                         console.log("something went wrong!")
@@ -173,7 +173,8 @@ export const useConnStore = defineStore('conn', () => {
             return undefined
         }
 
-        connection.dc = connection.pc.createDataChannel(DATACHANNEL_NAME)
+        const target = user.getUserByUsername(username)
+        connection.dc = connection.pc.createDataChannel(target!.id)
         connection.dc.binaryType = "arraybuffer"
         _setupDatachannelEventListeners(connection)
         _setupRtcConnEventListeners(connection)
@@ -232,10 +233,6 @@ export const useConnStore = defineStore('conn', () => {
         return conn.value.get(target)
     }
 
-    function ResetUserConnections() {
-        return conn.value.clear()
-    }
-
     return {
         RemoveRtcConn,
         CreateRtcOffer,
@@ -243,7 +240,6 @@ export const useConnStore = defineStore('conn', () => {
         HandleRtcAnswer,
         HandleIceCandidate,
         GetConnections,
-        ResetUserConnections,
         conn,
         GetUserConnection
     }
