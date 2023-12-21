@@ -61,7 +61,7 @@ backend-deploy:
     - linux
   image:
     name: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
-    entrypoint: [""]
+    entrypoint: [ "" ]
   before_script:
     - docker load -i backend/$AWS_DOCKER_NAME:latest.tar
     - curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
@@ -70,6 +70,7 @@ backend-deploy:
     - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
     - docker images
     - docker tag $AWS_DOCKER_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AWS_ECR_REPO:latest
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AWS_ECR_REPO:latest
     - >
       aws lightsail create-container-service-deployment 
       --service-name $AWS_LIGHTSAIL_SERVICE 
@@ -101,9 +102,9 @@ frontend-build:
     - aws
     - linux
   script:
-  - cd frontend
-  - npm install --progress=false
-  - npm run build
+    - cd frontend
+    - npm install --progress=false
+    - npm run build
   artifacts:
     expire_in: 1 week
     paths:
@@ -153,7 +154,7 @@ frontend-deploy:
   stage: deploy
   image:
     name: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
-    entrypoint: [""]
+    entrypoint: [ "" ]
   tags:
     - aws
     - linux

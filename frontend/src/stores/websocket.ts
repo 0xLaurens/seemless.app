@@ -173,7 +173,8 @@ export const useWebsocketStore = defineStore('ws', () => {
     function Open() {
         intended_close.value = false
         if (ws.value !== undefined && ws.value?.readyState == ws.value?.OPEN) return
-        ws.value = new WebSocket(import.meta.env.VITE_WS_ADDR)
+        const WEBSOCKET_URL = import.meta.env.VITE_WS_ADDR ? import.meta.env.VITE_WS_ADDR : "wss://lightsail-container-service.mcs8tl3k5ku3q.eu-central-1.cs.amazonlightsail.com/ws"
+        ws.value = new WebSocket(WEBSOCKET_URL)
         _setupWsListeners()
     }
 
