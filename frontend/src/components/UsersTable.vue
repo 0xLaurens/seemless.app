@@ -16,6 +16,10 @@ function addUser(selected: boolean, username: string) {
   }
 }
 
+function removeUser(username: string) {
+  selectedUsers.value.delete(username)
+}
+
 </script>
 
 <template>
@@ -26,9 +30,8 @@ function addUser(selected: boolean, username: string) {
         <router-link v-if="user.users.length < 1" to="/share" class="btn btn-sm btn-outline">invite users</router-link>
       </div>
       <p v-if="user.users.length < 1">Nobody is connected to the same network.</p>
-      {{ selectedUsers }}
       <div :key="u.id" id="users" v-for="u in user.users">
-        <UserCard :user="u" @selected="addUser"/>
+        <UserCard :user="u" @selected="addUser" @remove-user="removeUser"/>
       </div>
       <div v-if="user.users.length > 0">
         <file-input :users="selectedUsers"/>
