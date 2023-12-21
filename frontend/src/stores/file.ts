@@ -17,7 +17,7 @@ export const useFileStore = defineStore('file', () => {
     const accSize = ref(0)
     const receiveOffer: Ref<FileOffer | undefined> = ref(undefined)
     const sendOffer: Ref<FileOffer | undefined> = ref(undefined)
-    StreamSaver.mitm = import.meta.env.VITE_MITM_URL ? `${import.meta.env.VITE_MITM_URL}/mitm.html` : `https://${location.host}/StreamSaver/mitm.html?version=2.0.0`
+    StreamSaver.mitm = import.meta.env.VITE_MITM_URL ? `${import.meta.env.VITE_MITM_URL}/mitm.html?version=2.0.0` : `https://jimmywarting.github.io/StreamSaver.js`
     console.log(StreamSaver.mitm)
 
     const fileProgress: Ref<Map<string, FileOffer>> = ref(new Map())
