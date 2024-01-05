@@ -33,7 +33,8 @@ onUnmounted(() => {
       <p v-if="download.activeOffer">{{ UserTransfer.Transfer }}</p>
     </div>
     <div class="ml-auto flex items-center space-x-3">
-      <input type="checkbox" class="checkbox checkbox-primary" @change="$emit('selected', selected, user.username)"
+      <input type="checkbox" :aria-label="`send to ${user.username}`" class="checkbox checkbox-primary"
+             @change="$emit('selected', selected, user.username)"
              v-model="selected"/>
     </div>
   </div>
