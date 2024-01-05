@@ -1,5 +1,5 @@
 <template>
-  <div
+  <dialog
       @click="download.close()"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-filter backdrop-blur"
       v-if="download.popup"
@@ -25,10 +25,11 @@
             alt="preview"
         />
         <div class="card-actions justify-end">
-          <button class="btn btn-outline" @click="download.denyOffer(download.activeOffer)">
+          <button aria-label="deny files" class="btn btn-outline" @click="download.denyOffer(download.activeOffer)">
             Deny
           </button>
           <a
+              aria-label="accept files"
               class="btn btn-primary"
               @click="download.acceptOffer(download.activeOffer)"
               :href="download.url"
@@ -39,7 +40,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 </template>
 
 <script setup lang="ts">
