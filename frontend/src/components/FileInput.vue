@@ -23,12 +23,12 @@ function handleFiles(event: Event) {
 
 <template>
   <div class="flex pb-6">
-    <button :disabled="users.size < 1" class="btn btn-primary w-full">
+    <button aria-label="Transfer files" :disabled="users.size < 1" class="btn btn-primary w-full">
       <label for="fileInput"
              class="btn btn-ghost w-full">
         Transfer
         <plane-icon/>
-        <input id="fileInput" type="file" class="hidden"
+        <input aria-label="select files" id="fileInput" type="file" class="hidden"
                @change="handleFiles($event)"/>
       </label>
     </button>
