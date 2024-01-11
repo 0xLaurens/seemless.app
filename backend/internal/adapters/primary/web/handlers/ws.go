@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/mssola/user_agent"
 	"laurensdrop/internal/adapters/secondary"
 	"laurensdrop/internal/core/data"
@@ -51,16 +50,26 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		return err
 	}
 
-	room, err := wh.room.JoinLocalRoom(user)
+	room, err := wh.room.CreateRoom()
 	if err != nil {
 		return err
 	}
-	defer wh.wsDefer(user, c)
+	defer wh.wsDefer(user, room, c)
 
 	displayName := &data.Message{Type: data.DisplayName, User: user}
 	err = wh.msg.Send(displayName)
 	if err != nil {
 		log.Println("ERR -->> display name", err)
+		return err
+	}
+
+	err = wh.msg.SendTargeted(&data.Message{Type: data.RoomCreated, RoomCode: room.GetCode()}, user)
+	if err != nil {
+		return err
+	}
+
+	_, err = wh.room.JoinRoom(room.GetCode(), user)
+	if err != nil {
 		return err
 	}
 
@@ -81,12 +90,15 @@ func (wh *WebsocketHandler) HandleWebsocket(c *websocket.Conn) error {
 		msg, err := ReadMessage(c)
 		if err != nil {
 			log.Println("ERR -->> read message", err)
+			break
 		}
 		err = wh.WsRequestHandler(msg, user)
 		if err != nil {
 			log.Println("ERR -->> read loop", err)
+			break
 		}
 	}
+	return nil
 }
 
 func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
@@ -104,117 +116,69 @@ func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
 	return message, nil
 }
 
-func (wh *WebsocketHandler) wsDefer(user *data.User, conn *websocket.Conn) {
+func (wh *WebsocketHandler) wsDefer(user *data.User, room *data.Room, conn *websocket.Conn) {
 	log.Println("DBG", "defer", user.Username)
-	_, err := wh.us.RemoveUser(user.Username)
+	err := wh.room.LeaveRoom(room.GetId(), user)
 	if err != nil {
+		log.Println("ERR -->> leave room", err)
 		return
 	}
+	_, err = wh.us.RemoveUser(user.Username)
+	if err != nil {
+		log.Println("ERR -->> remove user", err)
+		return
+	}
+
 	_ = conn.Close() // attempt to close ignore if it's not successful
-
-	if user.LocalRoom != uuid.Nil {
-		localRoom, err := wh.room.GetRoomById(user.LocalRoom)
-		if err != nil {
-			log.Println("err ->> local room get by id", err)
-			return
-		}
-
-		localRoom.RemoveClient(user)
-		err = wh.msg.Broadcast(&data.Message{Type: data.PeerLeft, User: user, From: user.Username}, user.LocalRoom)
-		if err != nil {
-			log.Println("ERR -->> local room", err)
-			return
-		}
-	}
-
-	if user.PublicRoom != uuid.Nil {
-		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomLeft, User: user, From: user.Username}, user.PublicRoom)
-		if err != nil {
-			log.Println("ERR -->> public room", err)
-			return
-		}
-	}
 }
 
 func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, user *data.User) error {
-	log.Println("WsRequestHandler", msg, user.LocalRoom, user.PublicRoom)
 	switch msg.Type {
 	case data.Offer,
-		data.Answer,
-		data.PeerLeft,
+		data.Answer:
+		target, err := wh.us.GetUserByName(msg.Target)
+		err = wh.msg.SendTargeted(msg, target)
+		if err != nil {
+			return err
+		}
+		break
+	case data.PeerLeft,
 		data.PeerUpdated,
 		data.PeerJoined,
 		data.NewIceCandidate:
 		msg.Conn = user.Connection
-		if user.LocalRoom != uuid.Nil {
-			err := wh.msg.Broadcast(msg, user.LocalRoom)
-			if err != nil {
-				log.Println("ERR -->> local room broadcast", err)
-				return err
-			}
-		}
-		if user.PublicRoom != uuid.Nil {
-			err := wh.msg.Broadcast(msg, user.PublicRoom)
-			if err != nil {
-				log.Println("ERR -->> public room broadcast", err)
-				return err
-			}
-		}
-	case data.PublicRoomCreate:
-		if user.PublicRoom != uuid.Nil {
-			log.Println("You already made a room")
-			break
-		}
-
-		room, err := wh.room.CreatePublicRoom()
-		if err != nil {
-			fmt.Println("Failed to create room")
-			return err
-		}
-
-		err = wh.room.JoinPublicRoom(room.GetCode(), user)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		room, err = wh.room.GetRoomByCode(room.GetCode())
+		err := wh.msg.Broadcast(msg, user.RoomID)
 		if err != nil {
 			return err
 		}
-
-		err = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomCreated, RoomCode: room.GetCode()}, user)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomJoin, User: user}, user.PublicRoom)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-	case data.PublicRoomJoin:
+	case data.RoomJoin:
 		log.Printf("PUBLIC ROOM %s JOIN REQUEST %s\n", msg.RoomCode, user.Username)
 		room, err := wh.room.GetRoomByCode(data.RoomCode(strings.ToUpper(string(msg.RoomCode))))
 		if err != nil {
 			log.Println(err)
-			_ = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomIdInvalid}, user)
+			_ = wh.msg.SendTargeted(&data.Message{Type: data.RoomCodeInvalid}, user)
 		}
 
-		err = wh.msg.SendTargeted(&data.Message{Type: data.PublicRoomPeers, Users: room.GetClients(), RoomCode: room.GetCode()}, user)
+		user.SetRoom(room.GetId())
+
+		err = wh.msg.SendTargeted(&data.Message{Type: data.RoomJoined, RoomCode: room.GetCode()}, user)
+		if err != nil {
+			return err
+		}
+
+		err = wh.msg.SendTargeted(&data.Message{Type: data.Peers, Users: room.GetClients(), RoomCode: room.GetCode()}, user)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		err = wh.room.JoinPublicRoom(room.GetCode(), user)
+		_, err = wh.room.JoinRoom(room.GetCode(), user)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		err = wh.msg.Broadcast(&data.Message{Type: data.PublicRoomJoin, User: user}, room.GetId())
+		err = wh.msg.Broadcast(&data.Message{Type: data.PeerJoined, User: user}, room.GetId())
 		if err != nil {
 			log.Println(err)
 			return err

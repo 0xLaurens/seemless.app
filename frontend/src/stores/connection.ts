@@ -153,7 +153,7 @@ export const useConnStore = defineStore('conn', () => {
     /////////////
     function _setupRtcConn(username: string) {
         const connection: Connection = {
-            pc: new RTCPeerConnection(),
+            pc: new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]}),
             username: username
         }
         _setupRtcConnEventListeners(connection)
@@ -191,6 +191,7 @@ export const useConnStore = defineStore('conn', () => {
 
     async function HandleRtcOffer(offer: SessionDescriptionMessage): Promise<Message | undefined> {
         _setupRtcConn(offer.from)
+        console.log("handling offer", offer)
         const connection = conn.value.get(offer.from)
         if (connection == undefined) {
             toast.notify({

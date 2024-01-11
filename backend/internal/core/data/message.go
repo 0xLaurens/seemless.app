@@ -18,27 +18,23 @@ type Message struct {
 type MessageType string
 
 const (
-	Offer             MessageType = "Offer"
-	Answer            MessageType = "Answer"
-	NewIceCandidate   MessageType = "NewIceCandidate"
-	PeerJoined        MessageType = "PeerJoined"
-	PeerLeft          MessageType = "PeerLeft"
-	PeerUpdated       MessageType = "PeerUpdated"
-	Peers             MessageType = "Peers"
-	Username          MessageType = "Username"
-	UsernamePrompt    MessageType = "UsernamePrompt"
-	InvalidMessage    MessageType = "InvalidMessage"
-	DuplicateUsername MessageType = "DuplicateUsername"
+	Offer           MessageType = "Offer"
+	Answer          MessageType = "Answer"
+	NewIceCandidate MessageType = "NewIceCandidate"
 
-	PublicRoomJoin      MessageType = "PublicRoomJoin"
-	PublicRoomLeft      MessageType = "PublicRoomLeft"
-	PublicRoomPeers     MessageType = "PublicRoomPeers"
-	PublicRoomCreated   MessageType = "PublicRoomCreated"
-	PublicRoomCreate    MessageType = "PublicRoomCreate"
-	PublicRoomIdInvalid MessageType = "PublicRoomIdInvalid"
+	PeerJoined  MessageType = "PeerJoined"
+	PeerLeft    MessageType = "PeerLeft"
+	PeerUpdated MessageType = "PeerUpdated"
+	Peers       MessageType = "Peers"
 
-	LocalRoomJoin  MessageType = "LocalRoomJoin"
-	LocalRoomLeave MessageType = "LocalRoomLeave"
+	InvalidMessage MessageType = "InvalidMessage"
 
-	DisplayName MessageType = "DisplayName"
+	RoomJoined      MessageType = "RoomJoined"
+	RoomJoin        MessageType = "RoomJoin"
+	RoomCreated     MessageType = "RoomCreated"
+	RoomCodeInvalid MessageType = "RoomCodeInvalid"
+
+	DisplayName          MessageType = "DisplayName"
+	ChangeDisplayName    MessageType = "ChangeDisplayName"
+	DuplicateDisplayName MessageType = "DuplicateDisplayName"
 )

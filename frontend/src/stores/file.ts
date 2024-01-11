@@ -148,7 +148,6 @@ export const useFileStore = defineStore('file', () => {
         }
 
         addOfferedFiles(offer.id, files)
-
         for (const target of targets) {
             const connection = conn.GetUserConnection(target)
             if (!connection) continue

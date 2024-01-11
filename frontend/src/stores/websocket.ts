@@ -67,9 +67,6 @@ export const useWebsocketStore = defineStore('ws', () => {
             case RequestTypes.PeerLeft:
                 user.removeUser(data.user)
                 break
-            case RequestTypes.UsernamePrompt:
-            case RequestTypes.Username:
-                break
             case RequestTypes.DuplicateUsername:
                 toast.notify({
                     message: 'This username has already been taken in this room',
@@ -81,33 +78,15 @@ export const useWebsocketStore = defineStore('ws', () => {
                 user.setCurrentUser(data.user)
                 user.setUsername(data.user.username)
                 break
-            case RequestTypes.PublicRoomCreated:
+            case RequestTypes.RoomCreated:
                 room.setRoomCode(data.roomCode)
                 break
-            case RequestTypes.PublicRoomIdInvalid:
-                // TODO: implement not room not found
+            case RequestTypes.RoomCodeInvalid:
+                toast.notify({message: 'This room does not exist', type: ToastType.Warning})
                 break
-            case RequestTypes.PublicRoomJoin: {
-                if (data.user.username === user.getUsername()) return
-                user.addUser(data.user)
-                const offer = await conn.CreateRtcOffer(data.user.username)
-                if (offer) {
-                    SendMessage(offer)
-                }
-                break
-            }
-            case RequestTypes.PublicRoomPeers:
-                if (!data.users) return
-                for (const newUser of data.users) {
-                    if (newUser.username == user.getUsername()) return
-                    user.addUser(newUser)
-                }
+            case RequestTypes.RoomJoined:
                 room.setRoomCode(data.roomCode)
                 break
-            case RequestTypes.PublicRoomLeft:
-                console.log(data.type, data.user)
-                user.removeUser(data.user)
-                break;
             default:
                 console.log(`Unknown type ${data.type}`)
         }

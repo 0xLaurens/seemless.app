@@ -69,24 +69,6 @@ func setupTestApp() *fiber.App {
 	return app
 }
 
-/*
- * Helper function for the joining the room
- */
-func joinRoomHelper(conn *ws.Conn, username string) {
-	_, _, _ = conn.ReadMessage()
-	joinMessage := data.Message{
-		Type: data.Username,
-		Body: make(map[string]string),
-	}
-	joinMessage.Body["username"] = username
-	conn.WriteJSON(joinMessage)
-
-	// Peers message
-	_, _, _ = conn.ReadMessage()
-	// UserJoined
-	_, _, _ = conn.ReadMessage()
-}
-
 func TestInvalidWebsocketRequestShouldReturnUpgradeRequired(t *testing.T) {
 	app := setupTestApp()
 	defer app.Shutdown()
