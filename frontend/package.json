@@ -48,7 +48,7 @@
     "tailwindcss": "^3.3.3",
     "typescript": "~5.1.6",
     "vite": "^4.4.9",
-    "vite-plugin-pwa": "^0.16.5",
+    "vite-plugin-pwa": "^0.17.4",
     "vitest": "^0.34.2",
     "vue-tsc": "^1.8.8"
   }

@@ -41,14 +41,19 @@ const router = createRouter({
             component: ErrorView
         },
         {
+            path: '/c/:code',
+            name: 'quick-connect',
+            component: ExchangeView
+        },
+        {
             path: '/:unknown*',
             redirect: '/404'
-        }
+        },
     ]
 })
 
 router.beforeEach((to, _, next) => {
-    if (to.name === 'home' || to.name === '404 not found') {
+    if (to.name === 'home' || to.name === 'quick-connect' || to.name === '404 not found') {
         next()
     } else {
         const ws = useWebsocketStore()

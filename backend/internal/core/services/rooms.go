@@ -1,12 +1,10 @@
 package services
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/ports"
 	"log"
-	"net"
 )
 
 type RoomService struct {
@@ -23,26 +21,13 @@ func NewRoomService(repo ports.RoomRepo, code ports.CodeService) *RoomService {
 	}
 }
 
-func (r RoomService) CreateLocalRoom(ip *net.IP) (*data.Room, error) {
-	if exists, _ := r.repo.GetRoomByIp(ip); exists != nil {
-		return exists, nil
-	}
-
-	room, err := r.repo.AddRoom(data.CreateLocalRoom(ip))
-	if err != nil {
-		return nil, err
-	}
-
-	return room, nil
-}
-
-func (r RoomService) CreatePublicRoom() (*data.Room, error) {
+func (r RoomService) CreateRoom() (*data.Room, error) {
 	code, err := r.code.CreateRoomCode()
 	if err != nil {
 		return nil, err
 	}
 
-	room := data.CreatePublicRoom(code)
+	room := data.CreateRoom(code)
 	log.Println("DBG ->", room, room.GetCode())
 
 	_, err = r.repo.AddRoom(room)
@@ -53,37 +38,27 @@ func (r RoomService) CreatePublicRoom() (*data.Room, error) {
 	return room, nil
 }
 
-func (r RoomService) GetRoomById(id uuid.UUID) (*data.Room, error) {
-	return r.repo.GetRoomById(id)
-}
-
-func (r RoomService) GetRoomByIp(ip *net.IP) (*data.Room, error) {
-	return r.repo.GetRoomByIp(ip)
-}
-
-func (r RoomService) GetRoomByCode(code data.RoomCode) (*data.Room, error) {
-	return r.repo.GetRoomByCode(code)
-}
-
-func (r RoomService) JoinPublicRoom(code data.RoomCode, user *data.User) error {
+func (r RoomService) JoinRoom(code data.RoomCode, user *data.User) (*data.Room, error) {
 	room, err := r.GetRoomByCode(code)
 	if err != nil {
 		log.Println("get room by code", err)
-		return err
+		return nil, err
 	}
 
 	room.AddClient(user)
 	_, err = r.repo.UpdateRoom(room)
 	if err != nil {
 		log.Println("Update Room", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	user.SetRoom(room.GetId())
+
+	return room, nil
 }
 
-func (r RoomService) LeavePublicRoom(code data.RoomCode, user *data.User) error {
-	room, err := r.GetRoomByCode(code)
+func (r RoomService) LeaveRoom(id uuid.UUID, user *data.User) error {
+	room, err := r.GetRoomById(id)
 	if err != nil {
 		return err
 	}
@@ -105,51 +80,34 @@ func (r RoomService) LeavePublicRoom(code data.RoomCode, user *data.User) error 
 			return err
 		}
 	}
+	user.SetRoom(uuid.Nil)
 
 	return nil
 }
 
-func (r RoomService) JoinLocalRoom(user *data.User) (*data.Room, error) {
-	ip := user.GetIp()
-	if user.GetIp().IsPrivate() {
-		fmt.Println("PRIVATE IP")
-		parsed := net.ParseIP("0.0.0.0")
-		ip = &parsed
-	}
-
-	room, err := r.CreateLocalRoom(ip)
+func (r RoomService) CreatePublicRoom() (*data.Room, error) {
+	code, err := r.code.CreateRoomCode()
 	if err != nil {
 		return nil, err
 	}
 
-	room.AddClient(user)
-	_, err = r.repo.UpdateRoom(room)
+	room := data.CreateRoom(code)
+	log.Println("DBG ->", room, room.GetCode())
+
+	_, err = r.repo.AddRoom(room)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("DBG -->> user %s joined to room with the ip %v\n", user.GetUsername(), ip)
 
 	return room, nil
 }
 
-func (r RoomService) LeaveLocalRoom(user *data.User) error {
-	room, err := r.GetRoomByIp(user.GetIp())
-	if err != nil {
-		return err
-	}
-	room.RemoveClient(user)
-	updateRoom, err := r.repo.UpdateRoom(room)
-	if err != nil {
-		return err
-	}
+func (r RoomService) GetRoomById(id uuid.UUID) (*data.Room, error) {
+	return r.repo.GetRoomById(id)
+}
 
-	if len(updateRoom.GetClients()) < 1 {
-		err := r.repo.DeleteRoom(room.GetId())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (r RoomService) GetRoomByCode(code data.RoomCode) (*data.Room, error) {
+	return r.repo.GetRoomByCode(code)
 }
 
 func (r RoomService) DeleteRoom(id uuid.UUID) error {
