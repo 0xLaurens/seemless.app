@@ -7,7 +7,7 @@ const file = useFileStore()
 
 <template>
   <div class="card card-compact bg-base-200 dark:bg-base-300 mt-3 shadow-xl w-full h-full"
-       v-if="file.getFileProgress().value != undefined && file.getFileProgress().value.size > 1">
+       v-if="file.getFileProgress().value != undefined && file.getFileProgress().value.size > 0">
     <div class="card-body">
       <div class="card-title">
         <p>Outgoing</p>

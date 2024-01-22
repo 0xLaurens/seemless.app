@@ -151,12 +151,13 @@ export const useFileStore = defineStore('file', () => {
         for (const target of targets) {
             const connection = conn.GetUserConnection(target)
             if (!connection) continue
-            offer.target = connection.username
+            offer.target = connection.userId
             connection.dc?.send(JSON.stringify(offer))
         }
     }
 
     function respondToFileOffer(offer: FileOffer, status: FileSetup) {
+        console.log("respondToFileOffer", offer.from, status)
         const connection = conn.GetUserConnection(offer.from)
         if (!connection) return
 

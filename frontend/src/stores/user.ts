@@ -49,6 +49,12 @@ export const useUserStore = defineStore('user', () => {
         usersMap.value.delete(user.username)
     }
 
+    function updateUser(user: User) {
+        const index = users.value.findIndex((u) => u.id === user.id)
+        if (index === -1) return
+        users.value[index] = user
+    }
+
     function clearUsers() {
         users.value = []
         usersMap.value.clear()
@@ -61,6 +67,7 @@ export const useUserStore = defineStore('user', () => {
         addUser,
         removeUser,
         clearUsers,
+        updateUser,
         getCurrentUser,
         setCurrentUser,
         users

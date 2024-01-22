@@ -44,15 +44,14 @@ func (r RoomService) JoinRoom(code data.RoomCode, user *data.User) (*data.Room, 
 		log.Println("get room by code", err)
 		return nil, err
 	}
+	user.SetRoom(room.GetId())
 
 	room.AddClient(user)
-	_, err = r.repo.UpdateRoom(room)
+	_, err = r.repo.UpdateRoom(room.GetId(), room)
 	if err != nil {
 		log.Println("Update Room", err)
 		return nil, err
 	}
-
-	user.SetRoom(room.GetId())
 
 	return room, nil
 }
@@ -64,24 +63,24 @@ func (r RoomService) LeaveRoom(id uuid.UUID, user *data.User) error {
 	}
 
 	room.RemoveClient(user)
-	updatedRoom, err := r.repo.UpdateRoom(room)
+	_, err = r.repo.UpdateRoom(room.GetId(), room)
 	if err != nil {
 		return err
 	}
 
-	if len(updatedRoom.GetClients()) < 1 {
-		err = r.repo.DeleteRoom(room.GetId())
-		if err != nil {
-			return err
-		}
+	return nil
+}
 
-		err = r.code.RemoveRoomCode(room.GetCode())
-		if err != nil {
-			return err
-		}
+func (r RoomService) ChangeDisplayName(id uuid.UUID, user *data.User, displayName string) error {
+	room, err := r.GetRoomById(id)
+	if err != nil {
+		return err
 	}
-	user.SetRoom(uuid.Nil)
-
+	if err = room.DisplayNameUnique(displayName); err != nil {
+		return err
+	}
+	user.UpdateUsername(displayName)
+	_, err = r.repo.UpdateRoom(room.GetId(), room)
 	return nil
 }
 

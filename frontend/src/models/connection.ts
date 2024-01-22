@@ -1,5 +1,5 @@
 export interface Connection {
-  pc: RTCPeerConnection
-  dc?: RTCDataChannel
-  username: string
+    pc: RTCPeerConnection
+    dc?: RTCDataChannel
+    userId: string
 }

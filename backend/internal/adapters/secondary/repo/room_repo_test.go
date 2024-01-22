@@ -37,7 +37,7 @@ func TestUpdateRoomShouldNotBeAbleToAlterTheRoomCode(t *testing.T) {
 
 	room.SetCode("CHESS")
 
-	updateRoom, err := repo.UpdateRoom(room)
+	updateRoom, err := repo.UpdateRoom(room.GetId(), room)
 	assert.Error(t, data.InvalidRoomUpdate.Error(), err)
 	assert.Equal(t, (*data.Room)(nil), updateRoom)
 }
@@ -52,7 +52,7 @@ func TestUpdateRoomShouldChangeTheNumberOfUsersPublicRoom(t *testing.T) {
 	dummy := data.CreateUser("Android")
 	room.AddClient(dummy)
 
-	updatedRoom, err := repo.UpdateRoom(room)
+	updatedRoom, err := repo.UpdateRoom(room.GetId(), room)
 	assert.NoError(t, err)
 	assert.Equal(t, room, updatedRoom)
 
@@ -63,6 +63,36 @@ func TestUpdateRoomShouldChangeTheNumberOfUsersPublicRoom(t *testing.T) {
 	roomByCode, err := repo.GetRoomByCode(room.GetCode())
 	assert.NoError(t, err)
 	assert.Equal(t, room, roomByCode)
+}
+
+func TestUpdateRoomShouldRemoveClients(t *testing.T) {
+	repo := SetupTestRoomRepo()
+	code := "TESTS"
+	room := data.CreateRoom(data.RoomCode(code))
+
+	_, err := repo.AddRoom(room)
+	assert.NoError(t, err)
+	dummy := data.CreateUser("Android")
+	room.AddClient(dummy)
+
+	updatedRoom, err := repo.UpdateRoom(room.GetId(), room)
+	assert.NoError(t, err)
+	assert.Equal(t, room, updatedRoom)
+
+	roomById, err := repo.GetRoomById(room.GetId())
+	assert.NoError(t, err)
+	assert.Equal(t, room, roomById)
+	assert.Equal(t, len(roomById.GetClients()), len(updatedRoom.GetClients()))
+
+	roomByCode, err := repo.GetRoomByCode(room.GetCode())
+	assert.NoError(t, err)
+	assert.Equal(t, room, roomByCode)
+	assert.Equal(t, len(roomByCode.GetClients()), len(updatedRoom.GetClients()))
+
+	room.RemoveClient(dummy)
+	updatedRoom, err = repo.UpdateRoom(room.GetId(), room)
+	assert.NoError(t, err)
+	assert.Equal(t, len(room.GetClients()), len(updatedRoom.GetClients()))
 }
 
 func TestDeleteRoomShouldRemovePublicRoom(t *testing.T) {

@@ -118,18 +118,29 @@ func ReadMessage(conn *websocket.Conn) (*data.Message, error) {
 
 func (wh *WebsocketHandler) wsDefer(user *data.User, room *data.Room, conn *websocket.Conn) {
 	log.Println("DBG", "defer", user.Username)
-	err := wh.room.LeaveRoom(room.GetId(), user)
+
+	log.Println(user.Username, "disconnected")
+	latestUser, err := wh.us.GetUserById(user.GetId())
 	if err != nil {
-		log.Println("ERR -->> leave room", err)
-		return
-	}
-	_, err = wh.us.RemoveUser(user.Username)
-	if err != nil {
-		log.Println("ERR -->> remove user", err)
-		return
+		log.Println("ERR -->> get room by id", err)
 	}
 
-	_ = conn.Close() // attempt to close ignore if it's not successful
+	usersRoom, _ := wh.room.GetRoomById(latestUser.RoomID)
+	log.Println("DBG", "usersRoom", usersRoom.GetCode())
+
+	err = wh.msg.Broadcast(&data.Message{Type: data.PeerLeft, User: user}, latestUser.RoomID)
+	if err != nil {
+		log.Println("ERR -->> broadcast peer left", err)
+	}
+
+	err = wh.room.LeaveRoom(usersRoom.GetId(), user)
+	if err != nil {
+		log.Println("ERR -->> leave room", err)
+	}
+	_, err = wh.us.RemoveUser(user.GetId())
+	if err != nil {
+		log.Println("ERR -->> remove user", err)
+	}
 }
 
 func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, user *data.User) error {
@@ -152,7 +163,7 @@ func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, user *data.User)
 			return err
 		}
 	case data.RoomJoin:
-		log.Printf("PUBLIC ROOM %s JOIN REQUEST %s\n", msg.RoomCode, user.Username)
+		log.Printf("PUBLIC ROOM %s JOIN REQUEST %s %s\n", msg.RoomCode, user.Username)
 		room, err := wh.room.GetRoomByCode(data.RoomCode(strings.ToUpper(string(msg.RoomCode))))
 		if err != nil {
 			log.Println(err)
@@ -183,6 +194,15 @@ func (wh *WebsocketHandler) WsRequestHandler(msg *data.Message, user *data.User)
 			log.Println(err)
 			return err
 		}
+	case data.ChangeDisplayName:
+		err := wh.room.ChangeDisplayName(user.RoomID, user, msg.DisplayName)
+		if err != nil {
+			err := wh.msg.SendTargeted(&data.Message{Type: data.DuplicateDisplayName}, user)
+			if err != nil {
+				return err
+			}
+		}
+		err = wh.msg.Broadcast(&data.Message{Type: data.PeerUpdated, User: user, From: msg.From}, user.RoomID)
 	default:
 		log.Println("ERR -->> invalid request")
 		err := wh.msg.InvalidMessage(nil)

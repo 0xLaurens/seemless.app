@@ -38,6 +38,10 @@ func (m *WebsocketMsgNotifier) Send(msg *data.Message) error {
 }
 
 func (m *WebsocketMsgNotifier) SendTargeted(msg *data.Message, target *data.User) error {
+	if target.Connection.Conn == nil {
+		return nil
+	}
+
 	err := target.Connection.Conn.WriteJSON(msg)
 	if err != nil {
 		return err
