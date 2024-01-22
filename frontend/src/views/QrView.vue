@@ -32,13 +32,6 @@ onMounted(() => {
     // only available on https error can be ignored in development
     console.warn(error.message) // navigator.canShare is not a function
   }
-
-  if (room.getRoomCode() == undefined) {
-    const message: Message = {
-      type: RequestTypes.RoomCreate
-    }
-    ws.SendMessage(message)
-  }
 })
 
 function shareUrl() {
