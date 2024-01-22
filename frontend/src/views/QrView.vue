@@ -8,6 +8,7 @@ import type {Message} from "@/models/message";
 import {RequestTypes} from "@/models/request";
 import {useToastStore} from "@/stores/toast";
 import {ToastType} from "@/models/toast";
+import router from "@/router";
 
 const room = useRoomStore()
 const ws = useWebsocketStore()
@@ -15,6 +16,8 @@ const toast = useToastStore()
 
 const canShare = ref(false)
 const baseUrl = ref("")
+
+const roomCode = ref("")
 
 onMounted(() => {
   baseUrl.value = location.host
@@ -29,25 +32,27 @@ onMounted(() => {
     // only available on https error can be ignored in development
     console.warn(error.message) // navigator.canShare is not a function
   }
-
-  if (room.getRoomCode() == undefined) {
-    const message: Message = {
-      type: RequestTypes.PublicRoomCreate
-    }
-    ws.SendMessage(message)
-  }
 })
 
 function shareUrl() {
   navigator.share({
     title: "seemless.app",
-    text: `${location.host}/${room.getRoomCode()}`,
+    text: `${location.host}/c/${room.getRoomCode()}`,
   })
 }
 
 function copyToClipboard() {
-  navigator.clipboard.writeText(`${location.host}/${room.getRoomCode()}`)
+  navigator.clipboard.writeText(`${location.host}/c/${room.getRoomCode()}`)
   toast.notify({message: "Copy successful!", type: ToastType.Info})
+}
+
+function joinRoom() {
+  const message: Message = {
+    type: RequestTypes.RoomJoin,
+    roomCode: roomCode.value
+  }
+  ws.SendMessage(message)
+  router.push({path: "/"})
 }
 
 </script>
@@ -63,14 +68,14 @@ function copyToClipboard() {
       <div>
         <div class="flex items-center w-full justify-center mb-6">
           <div class="p-3 bg-white rounded">
-            <qrcode-vue class="h-32 lg:!h-56 !w-auto" :value="`${baseUrl}/${room.getRoomCode()}`" level="H"/>
+            <qrcode-vue class="h-32 lg:!h-56 !w-auto" :value="`${baseUrl}/c/${room.getRoomCode()}`" level="H"/>
           </div>
         </div>
       </div>
       <div>
         <div class="join">
-          <input readonly class="input input-sm w-40 sm:w-auto md:input-md join-item"
-                 :value="`${baseUrl}/${room.getRoomCode()}`"/>
+          <input readonly class="input input-sm w-56 sm:w-auto md:input-md join-item"
+                 :value="`${baseUrl}/c/${room.getRoomCode()}`"/>
           <button aria-label="copy to clipboard" @click="copyToClipboard"
                   class="btn btn-outline btn-sm md:btn-md join-item">
             <span class="hidden md:flex">Copy</span>
@@ -85,6 +90,19 @@ function copyToClipboard() {
             <plane-icon/>
           </button>
         </div>
+      </div>
+      <div>
+        <form @submit.prevent="roomCode.length < 5 || roomCode.length > 5" @submit="joinRoom">
+          <div class="join">
+            <input class="input input-sm w-56 sm:w-auto md:input-md join-item" placeholder="Enter Room Code"
+                   v-model="roomCode" @input="roomCode = roomCode.toUpperCase()"
+                   maxlength="5">
+            <button :disabled="roomCode.length < 5 || roomCode.length > 5" aria-label="join room"
+                    class="btn btn-primary btn-sm md:btn-md join-item" type="submit">
+              Join Room
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

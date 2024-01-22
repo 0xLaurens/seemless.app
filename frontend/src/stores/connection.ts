@@ -38,7 +38,7 @@ export const useConnStore = defineStore('conn', () => {
             const message: Message = {
                 candidate: ice.candidate,
                 from: user.getUsername(),
-                target: connection.username,
+                target: connection.userId,
                 type: RequestTypes.NewIceCandidate
             }
             ws.SendMessage(message)
@@ -46,7 +46,7 @@ export const useConnStore = defineStore('conn', () => {
         connection.pc.onnegotiationneeded = async () => {
             try {
                 makingOffer.value = true;
-                const offer = await CreateRtcOffer(connection.username)
+                const offer = await CreateRtcOffer(connection.userId)
                 ws.SendMessage(offer)
             } catch (err) {
                 console.error(err);
@@ -117,7 +117,7 @@ export const useConnStore = defineStore('conn', () => {
             //     message: `Connection lost to ${connection.username}`,
             //     type: ToastType.Warning
             // })
-            const userToRemove = user.getUserByUsername(connection.username)
+            const userToRemove = user.getUserByUsername(connection.userId)
             if (userToRemove) {
                 user.removeUser(userToRemove)
             }
@@ -151,20 +151,20 @@ export const useConnStore = defineStore('conn', () => {
     /////////////
     ///  RTC  ///
     /////////////
-    function _setupRtcConn(username: string) {
+    function _setupRtcConn(userId: string) {
         const connection: Connection = {
-            pc: new RTCPeerConnection(),
-            username: username
+            pc: new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]}),
+            userId: userId
         }
         _setupRtcConnEventListeners(connection)
-        conn.value.set(username, connection)
+        conn.value.set(userId, connection)
     }
 
 
-    async function CreateRtcOffer(username: string): Promise<Message | undefined> {
-        if (!conn.value.has(username)) _setupRtcConn(username)
+    async function CreateRtcOffer(userId: string): Promise<Message | undefined> {
+        if (!conn.value.has(userId)) _setupRtcConn(userId)
 
-        const connection = conn.value.get(username)
+        const connection = conn.value.get(userId)
         if (connection == undefined) {
             toast.notify({
                 message: 'Something went wrong creating the connection',
@@ -173,7 +173,7 @@ export const useConnStore = defineStore('conn', () => {
             return undefined
         }
 
-        const target = user.getUserByUsername(username)
+        const target = user.getUserByUsername(userId)
         connection.dc = connection.pc.createDataChannel(target!.id)
         connection.dc.binaryType = "arraybuffer"
         _setupDatachannelEventListeners(connection)
@@ -184,13 +184,14 @@ export const useConnStore = defineStore('conn', () => {
         return {
             from: user.getUsername(),
             sdp: offer.sdp,
-            target: username,
+            target: userId,
             type: RequestTypes.Offer
         }
     }
 
     async function HandleRtcOffer(offer: SessionDescriptionMessage): Promise<Message | undefined> {
         _setupRtcConn(offer.from)
+        console.log("handling offer", offer)
         const connection = conn.value.get(offer.from)
         if (connection == undefined) {
             toast.notify({

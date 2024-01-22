@@ -2,7 +2,6 @@ package data
 
 import (
 	"github.com/google/uuid"
-	"net"
 )
 
 type RoomType string
@@ -15,30 +14,16 @@ const (
 type RoomCode string
 
 type Room struct {
-	id       uuid.UUID
-	roomType RoomType
-	code     RoomCode
-	ip       *net.IP
-	clients  map[*User]bool
+	id      uuid.UUID
+	code    RoomCode
+	clients map[*User]bool
 }
 
-func CreateLocalRoom(ip *net.IP) *Room {
+func CreateRoom(code RoomCode) *Room {
 	return &Room{
-		id:       uuid.New(),
-		roomType: LocalRoom,
-		ip:       ip,
-		code:     "",
-		clients:  map[*User]bool{},
-	}
-}
-
-func CreatePublicRoom(code RoomCode) *Room {
-	return &Room{
-		id:       uuid.New(),
-		roomType: PublicRoom,
-		code:     code,
-		ip:       nil,
-		clients:  map[*User]bool{},
+		id:      uuid.New(),
+		code:    code,
+		clients: map[*User]bool{},
 	}
 }
 
@@ -54,14 +39,6 @@ func (r *Room) SetCode(code RoomCode) {
 	r.code = code
 }
 
-func (r *Room) GetIP() *net.IP {
-	return r.ip
-}
-
-func (r *Room) SetIP(ip *net.IP) {
-	r.ip = ip
-}
-
 func (r *Room) GetClients() []*User {
 	users := make([]*User, len(r.clients))
 
@@ -74,18 +51,17 @@ func (r *Room) GetClients() []*User {
 	return users
 }
 
-func (r *Room) AddClient(user *User) {
-	switch r.GetType() {
-	case PublicRoom:
-		user.PublicRoom = r.GetId()
-	case LocalRoom:
-		user.LocalRoom = r.GetId()
+func (r *Room) DisplayNameUnique(displayName string) error {
+	for user := range r.clients {
+		if user.GetUsername() == displayName {
+			return UserDuplicateUsername.Error()
+		}
 	}
-	r.clients[user] = true
+	return nil
 }
 
-func (r *Room) GetType() RoomType {
-	return r.roomType
+func (r *Room) AddClient(user *User) {
+	r.clients[user] = true
 }
 
 func (r *Room) RemoveClient(user *User) {

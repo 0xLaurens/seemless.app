@@ -7,8 +7,11 @@ import CheckIcon from "@/components/icons/CheckIcon.vue";
 import XIcon from "@/components/icons/XIcon.vue";
 import SettingsIcon from "@/components/icons/SettingsIcon.vue";
 import DeviceIcon from "@/components/icons/devices/DeviceIcon.vue";
+import {useWebsocketStore} from "@/stores/websocket";
+import {RequestTypes} from "@/models/request";
 
 const user = useUserStore()
+const ws = useWebsocketStore()
 
 const nameEditMode = ref(false)
 const updatedName = ref("")
@@ -19,7 +22,7 @@ function editName() {
 }
 
 function updateName() {
-  console.log(updatedName)
+  ws.SendMessage({type: RequestTypes.ChangeDisplayName, displayName: updatedName.value})
   editName()
 }
 
