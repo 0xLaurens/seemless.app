@@ -80,7 +80,7 @@ func (r *RoomRepoInMemory) GetRoomByCode(code data.RoomCode) (*data.Room, error)
 	return room, nil
 }
 
-func (r *RoomRepoInMemory) UpdateRoom(room *data.Room) (*data.Room, error) {
+func (r *RoomRepoInMemory) UpdateRoom(id uuid.UUID, room *data.Room) (*data.Room, error) {
 	oldRoom, _ := r.GetRoomById(room.GetId())
 	if !r.roomExists(room) {
 		return nil, data.RoomNotFound.Error()
@@ -97,6 +97,7 @@ func (r *RoomRepoInMemory) UpdateRoom(room *data.Room) (*data.Room, error) {
 	r.publicRooms[room.GetCode()] = room
 
 	return room, nil
+
 }
 
 func (r *RoomRepoInMemory) DeleteRoom(id uuid.UUID) error {

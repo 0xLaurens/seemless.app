@@ -65,6 +65,7 @@ export const useWebsocketStore = defineStore('ws', () => {
                 break;
             }
             case RequestTypes.PeerLeft:
+                console.log('peer left')
                 user.removeUser(data.user)
                 break
             case RequestTypes.DuplicateUsername:
@@ -86,6 +87,13 @@ export const useWebsocketStore = defineStore('ws', () => {
                 break
             case RequestTypes.RoomJoined:
                 room.setRoomCode(data.roomCode)
+                break
+            case RequestTypes.PeerUpdated:
+                if (user.getCurrentUser()?.id === data.user.id) {
+                    user.setCurrentUser(data.user)
+                    user.setUsername(data.user.username)
+                }
+                user.updateUser(data.user)
                 break
             default:
                 console.log(`Unknown type ${data.type}`)

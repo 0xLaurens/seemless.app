@@ -48,6 +48,10 @@ func CreateUser(device string, options ...UserOption) *User {
 	return user
 }
 
+func (u *User) GetId() uuid.UUID {
+	return u.Id
+}
+
 func (u *User) GetUsername() string {
 	return u.Username
 }

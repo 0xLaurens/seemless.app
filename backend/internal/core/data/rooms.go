@@ -51,6 +51,15 @@ func (r *Room) GetClients() []*User {
 	return users
 }
 
+func (r *Room) DisplayNameUnique(displayName string) error {
+	for user := range r.clients {
+		if user.GetUsername() == displayName {
+			return UserDuplicateUsername.Error()
+		}
+	}
+	return nil
+}
+
 func (r *Room) AddClient(user *User) {
 	r.clients[user] = true
 }

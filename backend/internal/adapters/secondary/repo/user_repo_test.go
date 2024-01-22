@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"laurensdrop/internal/core/data"
 	"laurensdrop/internal/ports"
@@ -133,7 +134,7 @@ func TestUpdateUserShouldUpdateUser(t *testing.T) {
 	}
 
 	userDTO := data.CreateUser("Android")
-	_, err = s.UpdateUser(users[0].Username, userDTO)
+	_, err = s.UpdateUser(users[0].GetId(), userDTO)
 	if err != nil {
 		return
 	}
@@ -162,7 +163,7 @@ func TestUpdateUserShouldNotAffectUserCount(t *testing.T) {
 	}
 
 	userDTO := data.CreateUser("Android", data.WithUsername("Harry"))
-	_, err = s.UpdateUser(preUpdate[0].Username, userDTO)
+	_, err = s.UpdateUser(preUpdate[0].GetId(), userDTO)
 	if err != nil {
 		return
 	}
@@ -187,7 +188,7 @@ func TestRemoveUserShouldNotAffectCountIfNonExistent(t *testing.T) {
 		return
 	}
 
-	_, err = s.RemoveUser("123")
+	_, err = s.RemoveUser(uuid.New())
 	if err != nil {
 		return
 	}
@@ -210,7 +211,7 @@ func TestRemoveUserShouldDeleteUser(t *testing.T) {
 	}
 	preDeleteUsers, err := s.GetAllUsers()
 
-	_, err = s.RemoveUser(preDeleteUsers[0].Username)
+	_, err = s.RemoveUser(preDeleteUsers[0].GetId())
 	if err != nil {
 		return
 	}
@@ -220,9 +221,7 @@ func TestRemoveUserShouldDeleteUser(t *testing.T) {
 		return
 	}
 
-	if len(users) != expected-1 {
-		t.Errorf("got %v expected %v", len(users), expected)
-	}
+	assert.Equal(t, expected, len(users))
 }
 
 // get user
@@ -233,6 +232,6 @@ func TestGetUserShouldReturnErrorWhenUserNotFound(t *testing.T) {
 		return
 	}
 
-	_, err = s.RemoveUser("bsUsername")
+	_, err = s.RemoveUser(uuid.New())
 	assert.Equal(t, data.UserNotFound.Error().Error(), err.Error())
 }
