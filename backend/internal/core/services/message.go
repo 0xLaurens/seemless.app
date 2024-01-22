@@ -39,6 +39,10 @@ func (m *MessageService) Send(msg *data.Message) error {
 }
 
 func (m *MessageService) SendTargeted(msg *data.Message, user *data.User) error {
+	err := m.validator.ValidateMessageOrigin(msg)
+	if err != nil {
+		return err
+	}
 	return m.notifier.SendTargeted(msg, user)
 }
 
@@ -63,12 +67,6 @@ func (m *MessageService) Broadcast(msg *data.Message, roomId uuid.UUID) error {
 		if err != nil {
 			return err
 		}
-
-		err = m.validator.ValidateMessageOrigin(msg)
-		if err != nil {
-			return err
-		}
-
 		return m.notifier.SendTargeted(msg, target)
 	}
 

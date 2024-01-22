@@ -13,11 +13,11 @@ export default defineConfig({
                 enabled: true
             },
             manifest: {
-                name: "BitDash",
-                short_name: "BitDash",
+                name: "Seemless.app",
+                short_name: "Seemless",
                 description: "peer-to-peer file sharing",
-                theme_color: "#4C08DE",
-                background_color: "#4C08DE",
+                theme_color: "#33b4a6",
+                background_color: "#2a303c",
                 icons: [
                     {
                         src: 'pwa-64x64.png',

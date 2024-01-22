@@ -1,22 +1,28 @@
 package repo
 
 import (
+	"github.com/google/uuid"
 	"laurensdrop/internal/core/data"
+	"laurensdrop/internal/ports"
 	"net"
 	"strings"
 	"sync"
 )
 
 type UserRepoInMemory struct {
-	mu    sync.Mutex
-	Users map[string]*data.User       //username -> user
-	Conns map[*net.TCPAddr]*data.User //ws conn -> user
+	mu        sync.Mutex
+	Users     map[string]*data.User       //username -> user
+	UsersById map[string]*data.User       //id -> user
+	Conns     map[*net.TCPAddr]*data.User //ws conn -> user
 }
+
+var _ ports.UserRepo = (*UserRepoInMemory)(nil)
 
 func NewUserRepoInMemory() *UserRepoInMemory {
 	return &UserRepoInMemory{
-		Users: make(map[string]*data.User),
-		Conns: make(map[*net.TCPAddr]*data.User),
+		Users:     make(map[string]*data.User),
+		UsersById: make(map[string]*data.User),
+		Conns:     make(map[*net.TCPAddr]*data.User),
 	}
 }
 
@@ -30,6 +36,7 @@ func (s *UserRepoInMemory) AddUser(u *data.User) (*data.User, error) {
 	}
 
 	s.Users[strings.ToUpper(u.Username)] = u
+	s.UsersById[u.Id.String()] = u
 
 	if u.Connection != nil {
 		//cast is allowed since this interface is always equal to TCPAddr
@@ -64,15 +71,28 @@ func (s *UserRepoInMemory) GetUserByAddr(addr data.RemoteAddr) (*data.User, erro
 	return user, nil
 }
 
-func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*data.User, error) {
+func (s *UserRepoInMemory) GetUserById(id uuid.UUID) (*data.User, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.UsersById[id.String()]
+	if !exists {
+		return nil, data.UserNotFound.Error()
+	}
+
+	return user, nil
+}
+
+func (s *UserRepoInMemory) UpdateUser(id uuid.UUID, userDTO *data.User) (*data.User, error) {
 	s.mu.Lock()
 
-	user, exists := s.Users[strings.ToUpper(username)]
+	user, exists := s.UsersById[id.String()]
 	if !exists {
 		return nil, data.UserNotFound.Error()
 	}
 
 	delete(s.Users, user.Username)
+	delete(s.UsersById, user.Id.String())
 
 	user.Username = userDTO.Username
 	user.Device = userDTO.Device
@@ -86,10 +106,10 @@ func (s *UserRepoInMemory) UpdateUser(username string, userDTO *data.User) (*dat
 	return user, nil
 }
 
-func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
+func (s *UserRepoInMemory) RemoveUser(id uuid.UUID) ([]*data.User, error) {
 	s.mu.Lock()
 
-	user, exists := s.Users[strings.ToUpper(username)]
+	user, exists := s.UsersById[id.String()]
 	if !exists {
 		return nil, data.UserNotFound.Error()
 	}
@@ -99,7 +119,8 @@ func (s *UserRepoInMemory) RemoveUser(username string) ([]*data.User, error) {
 		delete(s.Conns, remoteAddr)
 	}
 
-	delete(s.Users, strings.ToUpper(username))
+	delete(s.Users, user.Username)
+	delete(s.UsersById, user.Id.String())
 
 	s.mu.Unlock()
 

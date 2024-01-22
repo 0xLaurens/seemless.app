@@ -16,8 +16,7 @@ type User struct {
 	Device     string          `json:"device"`
 	Connection *websocket.Conn `json:"-"`
 	RemoteAddr RemoteAddr      `json:"-"`
-	PublicRoom uuid.UUID       `json:"-"`
-	LocalRoom  uuid.UUID       `json:"-"`
+	RoomID     uuid.UUID       `json:"-"`
 }
 
 // WithConnection helper function for create user to pass a connection
@@ -36,11 +35,10 @@ func WithUsername(username string) UserOption {
 
 func CreateUser(device string, options ...UserOption) *User {
 	user := &User{
-		Id:         uuid.New(),
-		Username:   utils.GenerateRandomDisplayName(),
-		Device:     device,
-		PublicRoom: uuid.Nil,
-		LocalRoom:  uuid.Nil,
+		Id:       uuid.New(),
+		Username: utils.GenerateRandomDisplayName(),
+		Device:   device,
+		RoomID:   uuid.Nil,
 	}
 
 	for _, option := range options {
@@ -48,6 +46,10 @@ func CreateUser(device string, options ...UserOption) *User {
 	}
 
 	return user
+}
+
+func (u *User) GetId() uuid.UUID {
+	return u.Id
 }
 
 func (u *User) GetUsername() string {
@@ -68,4 +70,8 @@ func (u *User) GetConnection() *websocket.Conn {
 
 func (u *User) GetIp() *net.IP {
 	return &u.RemoteAddr.IP
+}
+
+func (u *User) SetRoom(roomID uuid.UUID) {
+	u.RoomID = roomID
 }
